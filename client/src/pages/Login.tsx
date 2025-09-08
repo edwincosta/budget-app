@@ -81,6 +81,19 @@ export default function Login() {
     },
   })
 
+  const quickLogin = async (email: string, password: string) => {
+    try {
+      const result = await authService.login({ email, password })
+      toast.success(`Login realizado como ${result.user.name}!`)
+      setTimeout(() => {
+        window.location.href = '/'
+      }, 1000)
+    } catch (error: any) {
+      console.error('Quick login error:', error)
+      toast.error('Erro no login rápido: ' + (error.response?.data?.message || error.message))
+    }
+  }
+
   const onLoginSubmit = (data: LoginData) => {
     loginMutation.mutate(data)
   }
@@ -248,6 +261,31 @@ export default function Login() {
               </button>
             </form>
           )}
+
+          {/* Quick Login Buttons for Testing */}
+          <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <h3 className="text-sm font-medium text-yellow-800 mb-2">Login Rápido (Teste)</h3>
+            <div className="space-y-2">
+              <button
+                onClick={() => quickLogin('joao@example.com', '123456')}
+                className="w-full text-left px-3 py-2 bg-yellow-100 text-yellow-800 rounded text-sm hover:bg-yellow-200"
+              >
+                🧑‍💼 João Silva (Proprietário de orçamento)
+              </button>
+              <button
+                onClick={() => quickLogin('maria@example.com', '123456')}
+                className="w-full text-left px-3 py-2 bg-green-100 text-green-800 rounded text-sm hover:bg-green-200"
+              >
+                👩‍💼 Maria Santos (Tem 1 convite pendente)
+              </button>
+              <button
+                onClick={() => quickLogin('pedro@example.com', '123456')}
+                className="w-full text-left px-3 py-2 bg-blue-100 text-blue-800 rounded text-sm hover:bg-blue-200"
+              >
+                👨‍💼 Pedro Costa (Tem 1 convite pendente)
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

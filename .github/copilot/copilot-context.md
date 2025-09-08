@@ -259,13 +259,15 @@ DELETE /:id      # Deletar transação
 
 ### **Sharing Routes** (`/api/sharing`)
 ```typescript
-POST   /:budgetId/share              # Compartilhar orçamento (proprietário)
-GET    /:budgetId/shares             # Listar compartilhamentos
-DELETE /:budgetId/shares/:shareId    # Remover compartilhamento
+POST   /invite                       # Enviar convite de compartilhamento
+GET    /invitations                  # Listar convites recebidos
+GET    /sent                         # Listar convites enviados
+PUT    /respond/:shareId             # Responder a convite (aceitar/rejeitar)
+GET    /active                       # Listar compartilhamentos ativos
+DELETE /:shareId                     # Revogar compartilhamento
 
-GET    /invitations                  # Listar convites pendentes
-POST   /invitations/:shareId/accept  # Aceitar convite
-POST   /invitations/:shareId/reject  # Rejeitar convite
+# Rotas legacy (compatibilidade)
+POST   /:budgetId/share              # Compartilhar orçamento específico
 ```
 
 ### **Reports Routes** (`/api/reports`)
@@ -323,13 +325,17 @@ GET /overview            # Visão geral financeira
 - ✅ Usado para comparar planejado vs realizado
 
 ### 6. **Sistema de Compartilhamento**
-- ✅ Somente proprietário pode compartilhar orçamentos
+- ✅ Usuário pode enviar convites para seu orçamento padrão por email
 - ✅ Convite via email (usuário deve existir no sistema)
-- ✅ Status: PENDING → ACCEPTED/REJECTED
+- ✅ Status: PENDING → ACCEPTED/REJECTED/REVOKED
 - ✅ Permissões: READ (visualizar) ou WRITE (editar)
 - ✅ Não é possível compartilhar consigo mesmo
-- ✅ Um orçamento pode ser compartilhado múltiplas vezes (usuários diferentes)
-- ✅ Proprietário ou usuário compartilhado podem remover o compartilhamento
+- ✅ Não pode haver compartilhamentos duplicados (constraint unique)
+- ✅ Interface responsiva com três seções:
+  - Convites recebidos (aceitar/rejeitar)
+  - Convites enviados (visualizar status + revogar se PENDING/ACCEPTED)
+  - Compartilhamentos ativos (separados por "compartilhados por mim" e "comigo")
+- ✅ Ações baseadas em status: PENDING (revogar), ACCEPTED (remover acesso), REJECTED/REVOKED (visualização)
 
 ### 7. **Validações de Segurança**
 - ✅ Usuário só acessa dados de orçamentos que possui ou que foram compartilhados
@@ -352,13 +358,18 @@ GET /overview            # Visão geral financeira
 
 ### 2. **Compartilhamento de Orçamento**
 ```
-Proprietário:
-1. POST /api/sharing/:budgetId/share (email, permission)
+Usuário proprietário (enviando convite):
+1. POST /api/sharing/invite (email, permission) → envia convite para orçamento padrão
+2. GET /api/sharing/sent → acompanha status dos convites enviados
+3. DELETE /api/sharing/:shareId → revoga compartilhamento (se PENDING ou ACCEPTED)
 
 Usuário convidado:
-2. GET /api/sharing/invitations (ver convites pendentes)
-3. POST /api/sharing/invitations/:shareId/accept OU reject
-4. Acesso liberado para o orçamento compartilhado
+1. GET /api/sharing/invitations → ver convites recebidos pendentes
+2. PUT /api/sharing/respond/:shareId (action: "accept"/"reject") → responder convite
+3. GET /api/sharing/active → visualizar orçamentos compartilhados comigo
+
+Ambos:
+4. GET /api/sharing/active → ver todos compartilhamentos ativos (sharedByMe + sharedWithMe)
 ```
 
 ### 3. **Registro de Transação**
@@ -719,6 +730,96 @@ toast.loading('Salvando...');
 
 // ❌ NUNCA usar alert
 alert('Mensagem'); // PROIBIDO
+```
+
+---
+
+## 🧩 COMPONENTES PRINCIPAIS
+
+### ShareManager (`client/src/components/ShareManager.tsx`)
+
+**Componente principal do sistema de compartilhamento** com três seções responsivas:
+
+```typescript
+interface BudgetShare {
+  id: string;
+  budgetId: string;
+  sharedWithId: string;
+  permission: 'READ' | 'WRITE';
+  status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'REVOKED';
+  createdAt: string;
+  updatedAt: string;
+  budget?: {
+    id: string;
+    name: string;
+    description?: string;
+    owner?: {
+      id: string;
+      name: string;
+      email: string;
+    };
+  };
+  sharedWith?: {
+    id: string;
+    name: string;
+    email: string;
+  };
+}
+
+const ShareManager: React.FC = () => {
+  const [invitations, setInvitations] = useState<BudgetShare[]>([]);      // Convites recebidos
+  const [sentInvitations, setSentInvitations] = useState<BudgetShare[]>([]);  // Convites enviados
+  const [activeShares, setActiveShares] = useState({
+    sharedByMe: [],     // Orçamentos que compartilhei
+    sharedWithMe: []    // Orçamentos compartilhados comigo
+  });
+
+  // Três APIs principais
+  const loadData = async () => {
+    const invitationsData = await sharingService.getInvitations();
+    const sentInvitationsData = await sharingService.getSentInvitations();
+    const activeSharesData = await sharingService.getActiveShares();
+  };
+};
+```
+
+**Seções da Interface:**
+1. **Convites Recebidos**: Cards com ações Aceitar/Rejeitar
+2. **Convites Enviados**: Cards com status colorido + ações baseadas no status:
+   - `PENDING`: Botão "Revogar Convite" (amarelo)
+   - `ACCEPTED`: Botão "Remover Acesso" (vermelho)
+   - `REJECTED/REVOKED`: Apenas visualização (cinza)
+3. **Compartilhamentos Ativos**: Separados em "Por mim" e "Comigo"
+
+**Padrões de Design:**
+```typescript
+// Status colors
+const statusColors = {
+  PENDING: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  ACCEPTED: 'bg-green-100 text-green-800 border-green-200',
+  REJECTED: 'bg-red-100 text-red-800 border-red-200',
+  REVOKED: 'bg-gray-100 text-gray-800 border-gray-200'
+};
+
+// Responsive cards
+className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow 
+          border-l-4 border-l-blue-500"
+
+// Mobile-first grid
+className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
+```
+
+### API Services (`client/src/services/api.ts`)
+
+```typescript
+export const sharingService = {
+  async sendInvite(data: {email: string, permission: SharePermission}): Promise<BudgetShare>,
+  async getInvitations(): Promise<BudgetShare[]>,
+  async getSentInvitations(): Promise<BudgetShare[]>,
+  async respondToInvite(shareId: string, action: {action: "accept"|"reject"}): Promise<BudgetShare>,
+  async getActiveShares(): Promise<{sharedByMe: BudgetShare[], sharedWithMe: BudgetShare[]}>,
+  async revokeShare(shareId: string): Promise<void>
+};
 ```
 
 ---

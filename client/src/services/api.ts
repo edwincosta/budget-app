@@ -1,5 +1,5 @@
 import axios, { AxiosResponse } from 'axios';
-import { AuthResponse, User, Budget, BudgetAnalysis, Category, UserShare, ShareInviteRequest, ShareResponse } from '@/types';
+import { AuthResponse, User, Budget, BudgetAnalysis, Category, BudgetShare, UserShare, ShareInviteRequest, ShareResponse } from '@/types';
 import { setCookie, getCookie, deleteCookie } from '@/utils';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';

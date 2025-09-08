@@ -86,9 +86,9 @@ export interface ApiResponse<T> {
   message?: string;
 }
 
-export interface UserShare {
+export interface BudgetShare {
   id: string;
-  ownerId: string;
+  budgetId: string;
   sharedWithId: string;
   permission: SharePermission;
   status: ShareStatus;
@@ -98,11 +98,11 @@ export interface UserShare {
     id: string;
     name: string;
     description?: string;
-  };
-  owner?: {
-    id: string;
-    name: string;
-    email: string;
+    owner?: {
+      id: string;
+      name: string;
+      email: string;
+    };
   };
   sharedWith?: {
     id: string;
@@ -110,6 +110,9 @@ export interface UserShare {
     email: string;
   };
 }
+
+// Manter UserShare como alias para compatibilidade temporária
+export type UserShare = BudgetShare;
 
 export type SharePermission = 'READ' | 'WRITE';
 

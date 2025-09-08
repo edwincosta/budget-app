@@ -16,8 +16,6 @@ const ShareManager: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
 
-  console.log('✅ ShareManager - Componente carregado');
-
   const permissionLabels: Record<SharePermission, string> = {
     READ: 'Apenas Visualização (pode ver todos os dados do orçamento)',
     WRITE: 'Visualização e Edição (pode modificar contas, transações e orçamentos)'
@@ -28,33 +26,34 @@ const ShareManager: React.FC = () => {
   }, []);
 
   const loadData = async () => {
-    console.log('📡 ShareManager: Carregando dados...');
     try {
       setLoading(true);
       setHasError(false);
       
-      const [invitationsData, sentInvitationsData, activeSharesData] = await Promise.all([
-        sharingService.getInvitations().catch((error) => {
-          console.log('❌ Erro ao carregar invitations:', error);
-          return [];
-        }),
-        sharingService.getSentInvitations().catch((error) => {
-          console.log('❌ Erro ao carregar sent invitations:', error);
-          return [];
-        }),
-        sharingService.getActiveShares().catch((error) => {
-          console.log('❌ Erro ao carregar active shares:', error);
-          return { sharedByMe: [], sharedWithMe: [] };
-        })
-      ]);
+      // Carregar dados
+      const invitationsData = await sharingService.getInvitations().catch((error) => {
+        console.error('Erro ao carregar convites:', error);
+        toast.error(`Erro ao carregar convites recebidos: ${error.response?.data?.message || error.message}`);
+        return [];
+      });
+
+      const sentInvitationsData = await sharingService.getSentInvitations().catch((error) => {
+        console.error('Erro ao carregar convites enviados:', error);
+        toast.error(`Erro ao carregar convites enviados: ${error.response?.data?.message || error.message}`);
+        return [];
+      });
+      
+      const activeSharesData = await sharingService.getActiveShares().catch((error) => {
+        console.error('Erro ao carregar compartilhamentos:', error);
+        toast.error(`Erro ao carregar compartilhamentos ativos: ${error.response?.data?.message || error.message}`);
+        return { sharedByMe: [], sharedWithMe: [] };
+      });
       
       setInvitations(invitationsData || []);
       setSentInvitations(sentInvitationsData || []);
       setActiveShares(activeSharesData || { sharedByMe: [], sharedWithMe: [] });
-      
-      console.log('✅ Dados carregados com sucesso');
     } catch (error) {
-      console.error('❌ Erro ao carregar dados:', error);
+      console.error('Erro ao carregar dados:', error);
       setHasError(true);
       toast.error('Erro ao carregar dados de compartilhamento');
     } finally {
@@ -71,8 +70,6 @@ const ShareManager: React.FC = () => {
     }
 
     try {
-      console.log('📤 Enviando convite:', { inviteEmail, selectedPermission });
-      
       await sharingService.sendInvite({
         email: inviteEmail,
         permission: selectedPermission
@@ -85,58 +82,53 @@ const ShareManager: React.FC = () => {
       
       // Recarregar dados
       await loadData();
-    } catch (error) {
-      console.error('❌ Erro ao enviar convite:', error);
-      toast.error('Erro ao enviar convite');
+    } catch (error: any) {
+      console.error('Erro ao enviar convite:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Erro desconhecido';
+      toast.error(`Erro ao enviar convite: ${errorMessage}`);
     }
   };
 
   const handleAcceptInvite = async (shareId: string) => {
     try {
-      console.log('✅ Aceitando convite:', shareId);
-      
       await sharingService.respondToInvite(shareId, { action: 'accept' });
       
       toast.success('Convite aceito com sucesso!');
       await loadData();
-    } catch (error) {
-      console.error('❌ Erro ao aceitar convite:', error);
-      toast.error('Erro ao aceitar convite');
+    } catch (error: any) {
+      console.error('Erro ao aceitar convite:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Erro desconhecido';
+      toast.error(`Erro ao aceitar convite: ${errorMessage}`);
     }
   };
 
   const handleRejectInvite = async (shareId: string) => {
     try {
-      console.log('❌ Rejeitando convite:', shareId);
-      
       await sharingService.respondToInvite(shareId, { action: 'reject' });
       
       toast.success('Convite rejeitado');
       await loadData();
-    } catch (error) {
-      console.error('❌ Erro ao rejeitar convite:', error);
-      toast.error('Erro ao rejeitar convite');
+    } catch (error: any) {
+      console.error('Erro ao rejeitar convite:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Erro desconhecido';
+      toast.error(`Erro ao rejeitar convite: ${errorMessage}`);
     }
   };
 
   const handleRevokeShare = async (shareId: string) => {
     try {
-      console.log('🗑️ Revogando compartilhamento:', shareId);
-      
       await sharingService.revokeShare(shareId);
       
       toast.success('Compartilhamento revogado');
       await loadData();
-    } catch (error) {
-      console.error('❌ Erro ao revogar compartilhamento:', error);
-      toast.error('Erro ao revogar compartilhamento');
+    } catch (error: any) {
+      console.error('Erro ao revogar compartilhamento:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Erro desconhecido';
+      toast.error(`Erro ao revogar compartilhamento: ${errorMessage}`);
     }
   };
 
-  const testFunction = () => {
-    console.log('🧪 Botão de teste clicado!');
-    toast.success('Funcionalidade de teste funcionando!');
-  };
+
 
   // Estados de carregamento e erro
   if (loading) {
@@ -256,65 +248,187 @@ const ShareManager: React.FC = () => {
       )}
 
       {/* Lista de Convites Recebidos */}
-      {invitations.length > 0 && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold mb-4">Convites Recebidos</h2>
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-lg font-semibold mb-4">Convites Recebidos</h2>
+        {invitations.length > 0 ? (
           <div className="space-y-4">
             {invitations.map((invitation) => (
-              <div key={invitation.id} className="border rounded-lg p-4 flex justify-between items-center">
-                <div>
-                  <p className="font-medium">{invitation.owner?.name || 'Usuário desconhecido'}</p>
-                  <p className="text-sm text-gray-600">{invitation.owner?.email || 'Email não disponível'}</p>
-                  <p className="text-xs text-gray-500">
-                    Permissão: {permissionLabels[invitation.permission]}
-                  </p>
-                  {invitation.budget && (
-                    <p className="text-xs text-gray-500">
-                      Orçamento: {invitation.budget.name}
-                    </p>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <button 
-                    onClick={() => handleAcceptInvite(invitation.id)}
-                    className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
-                  >
-                    Aceitar
-                  </button>
-                  <button 
-                    onClick={() => handleRejectInvite(invitation.id)}
-                    className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
-                  >
-                    Rejeitar
-                  </button>
+              <div key={invitation.id} className="border rounded-lg p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+                  <div className="flex-1">
+                    <div className="mb-3">
+                      <p className="font-medium text-base text-gray-900">
+                        {invitation.budget?.owner?.name || 'Usuário desconhecido'}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {invitation.budget?.owner?.email || 'Email não disponível'}
+                      </p>
+                    </div>
+                    
+                    {invitation.budget && (
+                      <div className="mb-3 p-3 bg-gray-50 rounded-lg">
+                        <p className="font-medium text-sm text-gray-700">Orçamento:</p>
+                        <p className="text-sm text-gray-600">{invitation.budget.name}</p>
+                        {invitation.budget.description && (
+                          <p className="text-xs text-gray-500 mt-1">{invitation.budget.description}</p>
+                        )}
+                      </div>
+                    )}
+                    
+                    <div className="flex flex-wrap gap-2">
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        Permissão: {invitation.permission === 'READ' ? 'Visualização' : 'Edição'}
+                      </span>
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                        Pendente
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-col sm:flex-row gap-2 sm:ml-4">
+                    <button 
+                      onClick={() => handleAcceptInvite(invitation.id)}
+                      className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors font-medium"
+                    >
+                      ✅ Aceitar
+                    </button>
+                    <button 
+                      onClick={() => handleRejectInvite(invitation.id)}
+                      className="w-full sm:w-auto px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors font-medium"
+                    >
+                      ❌ Rejeitar
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="text-center py-8">
+            <div className="text-gray-500 mb-2">📬 Nenhum convite pendente</div>
+            <p className="text-sm text-gray-400">Você será notificado quando receber novos convites</p>
+          </div>
+        )}
+      </div>
+
+      {/* Lista de Convites Enviados */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-lg font-semibold mb-4">Convites Enviados</h2>
+        {sentInvitations.length > 0 ? (
+          <div className="space-y-4">
+            {sentInvitations.map((sentInvitation) => (
+              <div key={sentInvitation.id} className="border rounded-lg p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+                  <div className="flex-1">
+                    <div className="mb-3">
+                      <p className="font-medium text-base text-gray-900">
+                        {sentInvitation.sharedWith?.name || 'Usuário desconhecido'}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {sentInvitation.sharedWith?.email || 'Email não disponível'}
+                      </p>
+                    </div>
+                    
+                    {sentInvitation.budget && (
+                      <div className="mb-3 p-3 bg-gray-50 rounded-lg">
+                        <p className="font-medium text-sm text-gray-700">Orçamento:</p>
+                        <p className="text-sm text-gray-600">{sentInvitation.budget.name}</p>
+                        {sentInvitation.budget.description && (
+                          <p className="text-xs text-gray-500 mt-1">{sentInvitation.budget.description}</p>
+                        )}
+                      </div>
+                    )}
+                    
+                    <div className="flex flex-wrap gap-2">
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        Permissão: {sentInvitation.permission === 'READ' ? 'Visualização' : 'Edição'}
+                      </span>
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        sentInvitation.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                        sentInvitation.status === 'ACCEPTED' ? 'bg-green-100 text-green-800' :
+                        sentInvitation.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        Status: {
+                          sentInvitation.status === 'PENDING' ? 'Pendente' :
+                          sentInvitation.status === 'ACCEPTED' ? 'Aceito' :
+                          sentInvitation.status === 'REJECTED' ? 'Rejeitado' :
+                          sentInvitation.status
+                        }
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-col sm:flex-row gap-2 sm:ml-4">
+                    {sentInvitation.status === 'PENDING' && (
+                      <button 
+                        onClick={() => handleRevokeShare(sentInvitation.id)}
+                        className="w-full sm:w-auto px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors font-medium"
+                      >
+                        🗑️ Revogar Convite
+                      </button>
+                    )}
+                    {sentInvitation.status === 'ACCEPTED' && (
+                      <button 
+                        onClick={() => handleRevokeShare(sentInvitation.id)}
+                        className="w-full sm:w-auto px-4 py-2 bg-orange-600 text-white text-sm rounded-lg hover:bg-orange-700 transition-colors font-medium"
+                      >
+                        🚫 Remover Acesso
+                      </button>
+                    )}
+                    {sentInvitation.status === 'REJECTED' && (
+                      <button 
+                        onClick={() => handleRevokeShare(sentInvitation.id)}
+                        className="w-full sm:w-auto px-4 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 transition-colors font-medium"
+                      >
+                        🗑️ Remover
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <div className="text-gray-500 mb-2">📤 Nenhum convite enviado</div>
+            <p className="text-sm text-gray-400">Convide outros usuários para compartilhar seus orçamentos</p>
+          </div>
+        )}
+      </div>
 
       {/* Lista de Compartilhamentos Ativos */}
-      {(activeShares.sharedByMe.length > 0 || activeShares.sharedWithMe.length > 0) && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold mb-4">Compartilhamentos Ativos</h2>
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-lg font-semibold mb-4">Compartilhamentos Ativos</h2>
           
           {activeShares.sharedByMe.length > 0 && (
             <div className="mb-6">
-              <h3 className="text-md font-medium mb-2">Compartilhados por mim</h3>
-              <div className="space-y-2">
+              <h3 className="text-md font-medium mb-3 text-gray-800">🤝 Compartilhados por mim</h3>
+              <div className="space-y-3">
                 {activeShares.sharedByMe.map((share) => (
-                  <div key={share.id} className="border rounded p-3 flex justify-between items-center">
-                    <div>
-                      <p className="font-medium">{share.sharedWith?.name || 'Usuário desconhecido'}</p>
-                      <p className="text-sm text-gray-600">{share.sharedWith?.email || 'Email não disponível'}</p>
+                  <div key={share.id} className="border rounded-lg p-4 sm:p-5">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+                      <div className="flex-1">
+                        <div className="mb-2">
+                          <p className="font-medium text-gray-900">{share.sharedWith?.name || 'Usuário desconhecido'}</p>
+                          <p className="text-sm text-gray-600">{share.sharedWith?.email || 'Email não disponível'}</p>
+                        </div>
+                        {share.budget && (
+                          <p className="text-xs text-gray-500">
+                            Orçamento: {share.budget.name}
+                          </p>
+                        )}
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 mt-2">
+                          {share.permission === 'READ' ? '👁️ Visualização' : '✏️ Edição'}
+                        </span>
+                      </div>
+                      <button 
+                        onClick={() => handleRevokeShare(share.id)}
+                        className="w-full sm:w-auto px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors font-medium"
+                      >
+                        🗑️ Revogar
+                      </button>
                     </div>
-                    <button 
-                      onClick={() => handleRevokeShare(share.id)}
-                      className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
-                    >
-                      Revogar
-                    </button>
                   </div>
                 ))}
               </div>
@@ -323,59 +437,50 @@ const ShareManager: React.FC = () => {
 
           {activeShares.sharedWithMe.length > 0 && (
             <div>
-              <h3 className="text-md font-medium mb-2">Compartilhados comigo</h3>
-              <div className="space-y-2">
+              <h3 className="text-md font-medium mb-3 text-gray-800">📥 Compartilhados comigo</h3>
+              <div className="space-y-3">
                 {activeShares.sharedWithMe.map((share) => (
-                  <div key={share.id} className="border rounded p-3 flex justify-between items-center">
-                    <div>
-                      <p className="font-medium">{share.owner?.name || 'Usuário desconhecido'}</p>
-                      <p className="text-sm text-gray-600">{share.owner?.email || 'Email não disponível'}</p>
+                  <div key={share.id} className="border rounded-lg p-4 sm:p-5">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+                      <div className="flex-1">
+                        <div className="mb-2">
+                          <p className="font-medium text-gray-900">
+                            {share.budget?.owner?.name || 'Proprietário desconhecido'}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {share.budget?.owner?.email || 'Email não disponível'}
+                          </p>
+                        </div>
+                        {share.budget && (
+                          <div className="mb-2 p-3 bg-blue-50 rounded-lg">
+                            <p className="font-medium text-sm text-blue-700">Orçamento:</p>
+                            <p className="text-sm text-blue-600">{share.budget.name}</p>
+                          </div>
+                        )}
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          {share.permission === 'READ' ? '👁️ Visualização' : '✏️ Edição'}
+                        </span>
+                      </div>
+                      <button 
+                        onClick={() => handleRevokeShare(share.id)}
+                        className="w-full sm:w-auto px-4 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 transition-colors font-medium"
+                      >
+                        🚪 Sair
+                      </button>
                     </div>
-                    <button 
-                      onClick={() => handleRevokeShare(share.id)}
-                      className="px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-700"
-                    >
-                      Sair
-                    </button>
                   </div>
                 ))}
               </div>
             </div>
           )}
+          
+          {activeShares.sharedByMe.length === 0 && activeShares.sharedWithMe.length === 0 && (
+            <div className="text-center py-8">
+              <div className="text-gray-500 mb-2">🤝 Nenhum compartilhamento ativo</div>
+              <p className="text-sm text-gray-400">Envie ou aceite convites para ver compartilhamentos aqui</p>
+            </div>
+          )}
         </div>
-      )}
-
-      {/* Estado vazio */}
-      {!loading && !hasError && invitations.length === 0 && sentInvitations.length === 0 && 
-       activeShares.sharedByMe.length === 0 && activeShares.sharedWithMe.length === 0 && (
-        <div className="bg-white rounded-lg shadow p-8 text-center">
-          <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-gray-100 mb-4">
-            <svg className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-          </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Nenhum compartilhamento encontrado
-          </h3>
-          <p className="text-gray-500 mb-4">
-            Comece convidando outros usuários para compartilhar seu orçamento.
-          </p>
-          <div className="flex gap-2 justify-center">
-            <button
-              onClick={() => setShowInviteForm(true)}
-              className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Convidar Usuário
-            </button>
-            <button
-              onClick={testFunction}
-              className="inline-flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-            >
-              🧪 Teste
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

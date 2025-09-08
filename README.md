@@ -75,12 +75,19 @@ docker-compose -f docker-compose.prod.yml up --build
 ## 📱 Funcionalidades
 
 - ✅ Autenticação segura (JWT)
-- ✅ Dashboard responsivo
-- ✅ Gestão de receitas e despesas
-- ✅ Categorização de transações
-- ✅ Gráficos e relatórios
-- ✅ Exportação de dados
-- ✅ Modo escuro/claro
+- ✅ Dashboard responsivo com análises financeiras
+- ✅ Gestão completa de receitas e despesas
+- ✅ Categorização inteligente de transações
+- ✅ Sistema de contas múltiplas
+- ✅ Orçamentos mensais/trimestrais/anuais
+- ✅ **Sistema de Compartilhamento** 🤝
+  - Convites para outros usuários
+  - Permissões granulares (READ/WRITE)
+  - Gestão de acesso e revogação
+  - Interface responsiva para mobile
+- ✅ Gráficos e relatórios avançados
+- ✅ Exportação de dados (CSV)
+- ✅ Design responsivo e moderno
 - ✅ PWA ready
 
 ## 🚢 Deploy
