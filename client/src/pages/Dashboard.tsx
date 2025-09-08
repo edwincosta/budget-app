@@ -229,7 +229,7 @@ export default function Dashboard() {
                         </div>
                         <div className="flex-shrink-0">
                           <span className={`text-sm font-medium ${transaction.category.type === 'INCOME' ? 'text-green-600' : 'text-red-600'}`}>
-                            {transaction.category.type === 'INCOME' ? '+' : '-'}{formatCurrency(Number(transaction.amount))}
+                            {transaction.category.type === 'INCOME' ? '+' : '-'}{formatCurrency(Math.abs(Number(transaction.amount)))}
                           </span>
                         </div>
                       </div>

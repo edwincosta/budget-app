@@ -394,7 +394,7 @@ const Transactions = () => {
                         <div className={`text-lg font-semibold mb-2 ${
                           transaction.type === 'INCOME' ? 'text-green-600' : 'text-red-600'
                         }`}>
-                          {transaction.type === 'INCOME' ? '+' : '-'}{formatCurrency(Number(transaction.amount))}
+                          {transaction.type === 'INCOME' ? '+' : '-'}{formatCurrency(Math.abs(Number(transaction.amount)))}
                         </div>
                       </div>
                     </div>
@@ -490,7 +490,7 @@ const Transactions = () => {
                       transaction.type === 'INCOME' ? 'text-green-600' : 'text-red-600'
                     }`}>
                       <div className="whitespace-nowrap">
-                        {transaction.type === 'INCOME' ? '+' : '-'}{formatCurrency(Number(transaction.amount))}
+                        {transaction.type === 'INCOME' ? '+' : '-'}{formatCurrency(Math.abs(Number(transaction.amount)))}
                       </div>
                     </div>
                     
