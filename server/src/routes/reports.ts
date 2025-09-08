@@ -287,24 +287,38 @@ async function handleComparison(req: AuthRequest, res: Response) {
     let previousStartDate: Date;
     let previousEndDate: Date;
 
-    // Calculate date ranges based on period
-    switch (period) {
-      case '1month':
-        startDate = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
-        previousEndDate = new Date(startDate.getTime() - 1);
-        previousStartDate = new Date(previousEndDate.getFullYear(), previousEndDate.getMonth(), 1);
-        break;
-      case '3months':
-        startDate = new Date(endDate.getFullYear(), endDate.getMonth() - 2, 1);
-        previousEndDate = new Date(startDate.getTime() - 1);
-        previousStartDate = new Date(previousEndDate.getFullYear(), previousEndDate.getMonth() - 2, 1);
-        break;
-      case '6months':
-      default:
-        startDate = new Date(endDate.getFullYear(), endDate.getMonth() - 5, 1);
-        previousEndDate = new Date(startDate.getTime() - 1);
-        previousStartDate = new Date(previousEndDate.getFullYear(), previousEndDate.getMonth() - 5, 1);
-        break;
+    // Check if period is a specific month format (YYYY-MM)
+    if (period.match(/^\d{4}-\d{2}$/)) {
+      const [year, monthNum] = period.split('-');
+      startDate = new Date(parseInt(year), parseInt(monthNum) - 1, 1);
+      const currentEndDate = new Date(parseInt(year), parseInt(monthNum), 0);
+      
+      // Previous month
+      previousEndDate = new Date(startDate.getTime() - 1);
+      previousStartDate = new Date(previousEndDate.getFullYear(), previousEndDate.getMonth(), 1);
+      
+      // Use the actual end date for the selected month
+      endDate.setTime(currentEndDate.getTime());
+    } else {
+      // Calculate date ranges based on predefined periods
+      switch (period) {
+        case '1month':
+          startDate = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
+          previousEndDate = new Date(startDate.getTime() - 1);
+          previousStartDate = new Date(previousEndDate.getFullYear(), previousEndDate.getMonth(), 1);
+          break;
+        case '3months':
+          startDate = new Date(endDate.getFullYear(), endDate.getMonth() - 2, 1);
+          previousEndDate = new Date(startDate.getTime() - 1);
+          previousStartDate = new Date(previousEndDate.getFullYear(), previousEndDate.getMonth() - 2, 1);
+          break;
+        case '6months':
+        default:
+          startDate = new Date(endDate.getFullYear(), endDate.getMonth() - 5, 1);
+          previousEndDate = new Date(startDate.getTime() - 1);
+          previousStartDate = new Date(previousEndDate.getFullYear(), previousEndDate.getMonth() - 5, 1);
+          break;
+      }
     }
 
     // Get current period transactions
