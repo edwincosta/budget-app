@@ -4,14 +4,15 @@
 
 ### Para usar estes arquivos de contexto de forma eficaz:
 
-1. **Mantenha os arquivos atualizados**: Sempre que adicionar novas funcionalidades, atualize o contexto
-2. **Referencie o contexto**: Mencione "consulte o .copilot-context.md" nas suas perguntas
-3. **Use exemplos**: Referencie ".copilot-examples.md" para implementações similares
+1. **Use copilot-context.md como fonte única**: Todas as regras de negócio, arquitetura e padrões estão lá
+2. **Referencie sempre o contexto principal**: Mencione "seguindo as regras do copilot-context.md"
+3. **Use exemplos deste arquivo**: Para snippets e templates específicos do VS Code
 
-### Comandos úteis para o Copilot:
-- `"Seguindo o padrão do .copilot-context.md, crie uma nova rota para..."`
-- `"Baseado nos exemplos em .copilot-examples.md, implemente..."`
-- `"Considerando as regras de negócio do sistema, valide..."`
+### Comandos recomendados para o Copilot:
+- `"Seguindo as regras do copilot-context.md, crie uma nova rota para..."`
+- `"Baseado na arquitetura budget-centric do sistema, implemente..."`
+- `"Considerando as regras de responsividade obrigatórias, ajuste..."`
+- `"Seguindo os padrões de validação estabelecidos, valide..."`
 
 ## 🔧 Configurações do VS Code (.vscode/settings.json)
 

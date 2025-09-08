@@ -2,7 +2,7 @@
 
 ## 📝 Atualizações Recentes
 
-### 🗓️ Setembro 2024 - Funcionalidade de Compartilhamento
+### 🗓️ Setembro 2025 - Funcionalidade de Compartilhamento
 
 #### ✅ **Correções Implementadas**
 - Alinhamento de permissões com schema do banco (READ/WRITE)

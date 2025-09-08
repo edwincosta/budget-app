@@ -1,45 +1,27 @@
-# GitHub Copilot Context Files
+# 📋 GitHub Copilot Context - Budget App
 
-Este diretório contém arquivos de contexto para o GitHub Copilot, organizados para otimizar a assistência de código.
+## 🎯 **Arquivo Principal**
+**`copilot-context.md`** - Documentação completa e autorativa do sistema Budget App
 
-## 📁 Estrutura dos Arquivos
+## 📁 **Arquivos Complementares**
+- `copilot-config.md` - Configurações do VS Code e snippets úteis
+- `copilot-examples.md` - Exemplos práticos de implementação
+- `context/development-status.md` - Status atual do desenvolvimento
 
-### Arquivos Principais
-- `copilot-config.md` - Configurações e preferências do Copilot
-- `copilot-context.md` - Contexto geral do projeto
-- `copilot-examples.md` - Exemplos e padrões de código
+## 🔧 **Como Usar**
+Sempre referencie o `copilot-context.md` como fonte principal de verdade. Os demais arquivos fornecem informações complementares específicas.
 
-### Subdiretórios
-- `knowledge/` - Documentação de funcionalidades específicas
-  - `sharing-feature.md` - Sistema completo de compartilhamento de orçamentos
-- `context/` - Contexto de arquitetura e design
-  - `development-status.md` - Status atual e últimas atualizações do projeto
-- `instructions/` - Instruções de desenvolvimento e padrões
+### **Comandos para o Copilot:**
+```
+"Seguindo as regras do copilot-context.md, implemente..."
+"Baseado nos padrões do sistema, crie uma nova..."
+"Considerando a arquitetura budget-centric, adicione..."
+```
 
-## 🔧 Como Usar
-
-Os arquivos neste diretório são automaticamente considerados pelo GitHub Copilot quando você trabalha no projeto. Eles fornecem contexto sobre:
-
-- Padrões de código do projeto
-- Arquitetura e estrutura
-- Convenções e regras de negócio
-- Exemplos de implementação
-
-## 📝 Manutenção
-
-- Mantenha os arquivos atualizados conforme o projeto evolui
-- Use linguagem clara e objetiva
-- Inclua exemplos práticos sempre que possível
-
-## 🔄 Última Atualização
-
-**Setembro 2024:**
-- ✅ Documentação da funcionalidade de compartilhamento reorganizada
-- ✅ Correção de inconsistências nas permissões (READ/WRITE)
+## �️ **Última Atualização: Setembro 2025**
 - ✅ Limpeza de arquivos duplicados
-- ✅ Status atual do desenvolvimento documentado
-- Organize o conteúdo de forma hierárquica
+- ✅ Consolidação no copilot-context.md como fonte única
+- ✅ Remoção de informações fragmentadas
 
 ---
-
-*Este diretório segue as melhores práticas para integração com GitHub Copilot.*
+*Contexto otimizado para GitHub Copilot*
