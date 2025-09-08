@@ -90,10 +90,15 @@ export interface UserShare {
   id: string;
   ownerId: string;
   sharedWithId: string;
-  permissions: SharePermission[];
+  permission: SharePermission;
   status: ShareStatus;
   createdAt: string;
   updatedAt: string;
+  budget?: {
+    id: string;
+    name: string;
+    description?: string;
+  };
   owner?: {
     id: string;
     name: string;
@@ -106,21 +111,13 @@ export interface UserShare {
   };
 }
 
-export type SharePermission = 
-  | 'READ_ACCOUNTS'
-  | 'WRITE_ACCOUNTS'
-  | 'READ_TRANSACTIONS'
-  | 'WRITE_TRANSACTIONS'
-  | 'READ_BUDGETS'
-  | 'WRITE_BUDGETS'
-  | 'READ_CATEGORIES'
-  | 'WRITE_CATEGORIES';
+export type SharePermission = 'READ' | 'WRITE';
 
 export type ShareStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'REVOKED';
 
 export interface ShareInviteRequest {
   email: string;
-  permissions: SharePermission[];
+  permission: SharePermission;
 }
 
 export interface ShareResponse {

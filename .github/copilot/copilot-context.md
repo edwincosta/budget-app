@@ -11,7 +11,7 @@ O **Budget App** é um sistema completo de gerenciamento de orçamentos pessoais
 - ✅ Categorização de receitas e despesas
 - ✅ Transações financeiras com validações
 - ✅ Orçamentos planejados vs realizados
-- ✅ Sistema de compartilhamento de orçamentos
+- ✅ Sistema de compartilhamento de orçamentos (READ/WRITE)
 - ✅ Relatórios e análises financeiras
 - ✅ Dashboard com métricas
 
