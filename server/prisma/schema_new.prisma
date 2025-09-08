@@ -1,0 +1,178 @@
+// Nova estrutura do Prisma Schema - Orçamentos Compartilhados (GERAL)
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  name            String
+  password        String
+  defaultBudgetId String?  // Orçamento padrão do usuário
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relacionamentos
+  ownedBudgets    Budget[]      @relation("BudgetOwner")
+  defaultBudget   Budget?       @relation("DefaultBudget", fields: [defaultBudgetId], references: [id])
+  sharedBudgets   BudgetShare[] @relation("SharedWithUser")
+
+  @@map("users")
+}
+
+model Budget {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  ownerId     String   // Proprietário do orçamento
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relacionamentos
+  owner        User          @relation("BudgetOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  defaultUsers User[]        @relation("DefaultBudget")
+  accounts     Account[]
+  categories   Category[]
+  transactions Transaction[]
+  budgetItems  BudgetItem[]
+  shares       BudgetShare[]
+
+  @@map("budgets")
+}
+
+model Account {
+  id          String   @id @default(cuid())
+  name        String
+  type        AccountType
+  balance     Decimal  @default(0) @db.Decimal(12, 2)
+  description String?
+  budgetId    String   // Pertence a um orçamento específico
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relacionamentos
+  budget       Budget        @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@map("accounts")
+}
+
+model Category {
+  id          String      @id @default(cuid())
+  name        String
+  type        CategoryType
+  color       String      @default("#3B82F6")
+  icon        String?
+  budgetId    String      // Pertence a um orçamento específico
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relacionamentos
+  budget       Budget        @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+  budgetItems  BudgetItem[]
+
+  @@unique([name, budgetId])
+  @@map("categories")
+}
+
+model Transaction {
+  id          String          @id @default(cuid())
+  description String
+  amount      Decimal         @db.Decimal(12, 2)
+  type        TransactionType
+  date        DateTime
+  accountId   String
+  categoryId  String
+  budgetId    String          // Pertence a um orçamento específico
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  // Relacionamentos
+  budget   Budget   @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  account  Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@map("transactions")
+}
+
+model BudgetItem {
+  id         String       @id @default(cuid())
+  amount     Decimal      @db.Decimal(12, 2)
+  period     BudgetPeriod
+  isActive   Boolean      @default(true)
+  categoryId String
+  budgetId   String       // Pertence a um orçamento específico
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  // Relacionamentos
+  budget   Budget   @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryId, budgetId, isActive])
+  @@map("budget_items")
+}
+
+model BudgetShare {
+  id           String         @id @default(cuid())
+  budgetId     String         // Orçamento sendo compartilhado
+  sharedWithId String         // Usuário com quem está sendo compartilhado
+  permission   SharePermission @default(READ) // READ ou WRITE (simples)
+  status       ShareStatus    @default(PENDING)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  // Relacionamentos
+  budget     Budget @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  sharedWith User   @relation("SharedWithUser", fields: [sharedWithId], references: [id], onDelete: Cascade)
+
+  @@unique([budgetId, sharedWithId])
+  @@map("budget_shares")
+}
+
+// Enums mantidos
+enum AccountType {
+  CHECKING
+  SAVINGS
+  CREDIT_CARD
+  INVESTMENT
+  CASH
+}
+
+enum CategoryType {
+  INCOME
+  EXPENSE
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+  TRANSFER
+}
+
+enum BudgetPeriod {
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+// Enums simplificados para compartilhamento
+enum SharePermission {
+  READ   // Pode visualizar tudo
+  WRITE  // Pode editar tudo
+}
+
+enum ShareStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  REVOKED
+}

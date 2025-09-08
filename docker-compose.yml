@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: budget_db
+    environment:
+      POSTGRES_USER: budget_user
+      POSTGRES_PASSWORD: budget_password
+      POSTGRES_DB: budget_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - budget_network
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: budget_server
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://budget_user:budget_password@db:5432/budget_db
+      - JWT_SECRET=your_super_secret_jwt_key_change_in_production
+      - PORT=3001
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+      - NODE_OPTIONS=--max-old-space-size=4096
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./server:/app:cached
+      - /app/node_modules
+      - /app/dist
+    depends_on:
+      - db
+    networks:
+      - budget_network
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
+    command: npm run dev
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: budget_client
+    environment:
+      - VITE_API_URL=http://localhost:3001
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+    depends_on:
+      - server
+    networks:
+      - budget_network
+
+volumes:
+  postgres_data:
+
+networks:
+  budget_network:
+    driver: bridge
