@@ -10,6 +10,7 @@ import Reports from '@/pages/Reports'
 import Budgets from '@/pages/Budgets'
 import Sharing from '@/pages/Sharing'
 import Layout from '@/components/Layout'
+import { BudgetProvider } from '@/contexts/BudgetContext'
 
 function App() {
   useEffect(() => {
@@ -27,18 +28,20 @@ function App() {
           path="/*"
           element={
             isAuthenticated ? (
-              <Layout>
-                <Routes>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/categories" element={<Categories />} />
-                  <Route path="/accounts" element={<Accounts />} />
-                  <Route path="/transactions" element={<Transactions />} />
-                  <Route path="/reports" element={<Reports />} />
-                  <Route path="/budgets" element={<Budgets />} />
-                  <Route path="/sharing" element={<Sharing />} />
-                </Routes>
-              </Layout>
+              <BudgetProvider>
+                <Layout>
+                  <Routes>
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/categories" element={<Categories />} />
+                    <Route path="/accounts" element={<Accounts />} />
+                    <Route path="/transactions" element={<Transactions />} />
+                    <Route path="/reports" element={<Reports />} />
+                    <Route path="/budgets" element={<Budgets />} />
+                    <Route path="/sharing" element={<Sharing />} />
+                  </Routes>
+                </Layout>
+              </BudgetProvider>
             ) : (
               <Navigate to="/login" replace />
             )

@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { LogOut, Home, CreditCard, Tag, TrendingUp, BarChart3, Target, Menu, X, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import { authService } from '@/services/api'
+import BudgetSelector from './BudgetSelector'
 
 interface LayoutProps {
   children: ReactNode
@@ -48,6 +49,7 @@ export default function Layout({ children }: LayoutProps) {
             </div>
             
             <div className="flex items-center space-x-4">
+              <BudgetSelector />
               <span className="text-sm text-gray-700 hidden sm:block">Olá, {user?.name}</span>
               <span className="text-sm text-gray-700 sm:hidden">Olá</span>
               <button

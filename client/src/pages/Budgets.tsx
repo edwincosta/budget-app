@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
-import { Plus, Edit, Trash2, Save, X, Target, DollarSign, Calendar } from 'lucide-react'
+import { Plus, Edit, Trash2, Save, X, Target, DollarSign, Calendar, Users } from 'lucide-react'
 import { budgetService, categoryService } from '@/services/api'
 import { Budget, Category } from '@/types'
+import { useBudget } from '@/contexts/BudgetContext'
 
 export default function Budgets() {
+  const { activeBudget, isOwner } = useBudget();
   const [budgets, setBudgets] = useState<Budget[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
@@ -18,14 +20,15 @@ export default function Budgets() {
   // Carregar orçamentos e categorias
   useEffect(() => {
     loadData()
-  }, [])
+  }, [activeBudget])
 
   const loadData = async () => {
     try {
       setLoading(true)
+      const budgetId = activeBudget?.budget?.id;
       const [budgetsData, categoriesData] = await Promise.all([
-        budgetService.getBudgets(),
-        categoryService.getCategories()
+        budgetService.getBudgets(budgetId),
+        categoryService.getCategories(budgetId)
       ])
       
       setBudgets(budgetsData)
@@ -45,12 +48,13 @@ export default function Budgets() {
     }
 
     try {
+      const budgetId = activeBudget?.budget?.id;
       await budgetService.createBudget({
         categoryId: newBudget.categoryId,
         amount: parseFloat(newBudget.amount),
         period: newBudget.period,
         isActive: true
-      })
+      }, budgetId)
       
       setNewBudget({ categoryId: '', amount: '', period: 'MONTHLY' })
       setIsCreating(false)
@@ -63,7 +67,8 @@ export default function Budgets() {
 
   const handleEditBudget = async (budgetId: string, updates: Partial<Budget>) => {
     try {
-      await budgetService.updateBudget(budgetId, updates)
+      const activeBudgetId = activeBudget?.budget?.id;
+      await budgetService.updateBudget(budgetId, updates, activeBudgetId)
       setEditingBudget(null)
       loadData()
     } catch (error) {
@@ -78,7 +83,8 @@ export default function Budgets() {
     }
 
     try {
-      await budgetService.deleteBudget(budgetId)
+      const activeBudgetId = activeBudget?.budget?.id;
+      await budgetService.deleteBudget(budgetId, activeBudgetId)
       loadData()
     } catch (error) {
       console.error('Erro ao excluir orçamento:', error)
@@ -116,6 +122,23 @@ export default function Budgets() {
 
   return (
     <div className="space-y-6">
+      {/* Banner de acesso compartilhado */}
+      {activeBudget && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <Users className="h-5 w-5 text-blue-600 mr-3" />
+            <div>
+              <h3 className="text-sm font-medium text-blue-800">
+                Visualizando: {activeBudget.budget?.name}
+              </h3>
+              <p className="text-sm text-blue-600">
+                Orçamento compartilhado por {activeBudget.budget?.owner?.name} • Permissão: {activeBudget.permission === 'READ' ? 'Visualização' : 'Edição'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 lg:gap-6">
         <div>
@@ -123,14 +146,16 @@ export default function Budgets() {
           <p className="text-gray-600">Defina e gerencie seus orçamentos por categoria</p>
         </div>
         
-        <button
-          onClick={() => setIsCreating(true)}
-          disabled={availableCategories.length === 0}
-          className="bg-blue-600 text-white px-4 py-2 md:py-3 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed w-full lg:w-auto"
-        >
-          <Plus className="w-4 h-4" />
-          Novo Orçamento
-        </button>
+        {(isOwner || activeBudget?.permission === 'WRITE') && (
+          <button
+            onClick={() => setIsCreating(true)}
+            disabled={availableCategories.length === 0}
+            className="bg-blue-600 text-white px-4 py-2 md:py-3 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed w-full lg:w-auto"
+          >
+            <Plus className="w-4 h-4" />
+            Novo Orçamento
+          </button>
+        )}
       </div>
 
       {/* Stats Cards */}

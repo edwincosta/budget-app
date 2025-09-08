@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, Users } from 'lucide-react'
 import api from '@/services/api'
+import { useBudget } from '@/contexts/BudgetContext'
 
 interface Category {
   id: string
@@ -19,6 +20,7 @@ const COLORS = [
 ]
 
 const Categories = () => {
+  const { activeBudget, isOwner } = useBudget();
   const [categories, setCategories] = useState<Category[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -124,15 +126,34 @@ const Categories = () => {
 
   return (
     <div className="space-y-6">
+      {/* Banner de acesso compartilhado */}
+      {activeBudget && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <Users className="h-5 w-5 text-blue-600 mr-3" />
+            <div>
+              <h3 className="text-sm font-medium text-blue-800">
+                Visualizando: {activeBudget.budget?.name}
+              </h3>
+              <p className="text-sm text-blue-600">
+                Orçamento compartilhado por {activeBudget.budget?.owner?.name} • Permissão: {activeBudget.permission === 'READ' ? 'Visualização' : 'Edição'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Categorias</h1>
-        <button
-          onClick={openCreateModal}
-          className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors w-full sm:w-auto"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Nova Categoria
-        </button>
+        {(isOwner || activeBudget?.permission === 'WRITE') && (
+          <button
+            onClick={openCreateModal}
+            className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors w-full sm:w-auto"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Nova Categoria
+          </button>
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">

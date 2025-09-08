@@ -43,20 +43,31 @@ export default function FinancialForecast({ period, budgetId }: FinancialForecas
     try {
       setLoading(true);
       
-      // Build URL with optional budgetId
+      // Build URL with optional budgetId using proper API base
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
       const baseUrl = budgetId 
-        ? `/api/reports/forecast/${budgetId}` 
-        : '/api/reports/forecast';
+        ? `${API_URL}/api/budgets/${budgetId}/reports/forecast` 
+        : `${API_URL}/api/reports/forecast`;
+      
+      const token = localStorage.getItem('token') || document.cookie
+        .split('; ')
+        .find(row => row.startsWith('auth_token='))
+        ?.split('=')[1];
+      
+
       
       // Fetch forecast data from backend
       const response = await fetch(`${baseUrl}?period=${period}&type=${forecastType}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
       
       if (response.ok) {
         const result = await response.json();
+        
+        // Both routes now use the same standardized format
         setForecastData(result.data?.forecastData || []);
         setSummary(result.data?.summary || {
           nextMonthPrediction: 0,
@@ -66,14 +77,16 @@ export default function FinancialForecast({ period, budgetId }: FinancialForecas
           recommendation: 'Dados insuficientes para gerar previsões precisas.'
         });
       } else {
-        console.error('Failed to fetch forecast data');
+        console.error('Failed to fetch forecast data. Status:', response.status);
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
         setForecastData([]);
         setSummary({
           nextMonthPrediction: 0,
           growthRate: 0,
           trend: 'stable',
           confidence: 0,
-          recommendation: 'Dados insuficientes para gerar previsões precisas.'
+          recommendation: 'Erro ao carregar previsões. Verifique sua conexão.'
         });
       }
     } catch (error) {

@@ -591,4 +591,569 @@ router.post('/:budgetId/set-default', auth, budgetAuth, async (req: BudgetAuthRe
   }
 });
 
+// ===== ROTAS PARA CONTEXTO DE ORÇAMENTO COMPARTILHADO =====
+
+// Dashboard Stats para orçamento específico
+router.get('/:budgetId/dashboard/stats', auth, budgetAuth, async (req: BudgetAuthRequest, res) => {
+  try {
+    const budgetId = req.budget!.id;
+
+    // Saldo total das contas
+    const accounts = await prisma.account.findMany({
+      where: { budgetId },
+      select: { balance: true }
+    });
+    const totalBalance = accounts.reduce((sum, acc) => sum + parseFloat(acc.balance.toString()), 0);
+
+    // Receitas do mês atual
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+
+    const monthlyIncome = await prisma.transaction.aggregate({
+      where: {
+        budgetId,
+        type: 'INCOME',
+        date: { gte: startOfMonth, lte: endOfMonth }
+      },
+      _sum: { amount: true }
+    });
+
+    // Despesas do mês atual
+    const monthlyExpenses = await prisma.transaction.aggregate({
+      where: {
+        budgetId,
+        type: 'EXPENSE',
+        date: { gte: startOfMonth, lte: endOfMonth }
+      },
+      _sum: { amount: true }
+    });
+
+    // Contagem de contas
+    const accountsCount = await prisma.account.count({
+      where: { budgetId }
+    });
+
+    // Transações recentes
+    const recentTransactions = await prisma.transaction.findMany({
+      where: { budgetId },
+      include: {
+        account: { select: { name: true, type: true } },
+        category: { select: { name: true, type: true, color: true } }
+      },
+      orderBy: { date: 'desc' },
+      take: 10
+    });
+
+    res.json({
+      success: true,
+      data: {
+        totalBalance,
+        monthlyIncome: parseFloat(monthlyIncome._sum.amount?.toString() || '0'),
+        monthlyExpenses: parseFloat(monthlyExpenses._sum.amount?.toString() || '0'),
+        accountsCount,
+        recentTransactions: recentTransactions.map(t => ({
+          ...t,
+          amount: parseFloat(t.amount.toString())
+        }))
+      }
+    });
+  } catch (error) {
+    console.error('Error getting budget dashboard stats:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Contas para orçamento específico
+router.get('/:budgetId/accounts', auth, budgetAuth, async (req: BudgetAuthRequest, res) => {
+  try {
+    const accounts = await prisma.account.findMany({
+      where: { budgetId: req.budget!.id },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    res.json({
+      success: true,
+      data: accounts.map((account: any) => ({
+        ...account,
+        balance: parseFloat(account.balance.toString())
+      }))
+    });
+  } catch (error) {
+    console.error('Error getting budget accounts:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Categorias para orçamento específico
+router.get('/:budgetId/categories', auth, budgetAuth, async (req: BudgetAuthRequest, res) => {
+  try {
+    const categories = await prisma.category.findMany({
+      where: { budgetId: req.budget!.id },
+      orderBy: { name: 'asc' }
+    });
+
+    res.json({
+      success: true,
+      data: categories
+    });
+  } catch (error) {
+    console.error('Error getting budget categories:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Transações para orçamento específico
+router.get('/:budgetId/transactions', auth, budgetAuth, async (req: BudgetAuthRequest, res) => {
+  try {
+    const transactions = await prisma.transaction.findMany({
+      where: { budgetId: req.budget!.id },
+      include: {
+        account: { select: { name: true, type: true } },
+        category: { select: { name: true, type: true, color: true } }
+      },
+      orderBy: { date: 'desc' }
+    });
+
+    res.json({
+      success: true,
+      data: transactions.map(t => ({
+        ...t,
+        amount: parseFloat(t.amount.toString())
+      }))
+    });
+  } catch (error) {
+    console.error('Error getting budget transactions:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Items de orçamento para orçamento específico
+router.get('/:budgetId/items', auth, budgetAuth, async (req: BudgetAuthRequest, res) => {
+  try {
+    const budgetItems = await prisma.budgetItem.findMany({
+      where: {
+        budgetId: req.budget!.id,
+        isActive: true
+      },
+      include: {
+        category: true
+      },
+      orderBy: [
+        { category: { name: 'asc' } }
+      ]
+    });
+
+    const budgets = budgetItems.map(item => ({
+      id: item.id,
+      amount: parseFloat(item.amount.toString()),
+      period: item.period,
+      isActive: item.isActive,
+      categoryId: item.categoryId,
+      userId: req.user!.id,
+      createdAt: item.createdAt.toISOString(),
+      updatedAt: item.updatedAt.toISOString(),
+      category: item.category
+    }));
+
+    res.json(budgets);
+  } catch (error) {
+    console.error('Error getting budget items:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Rota de relatórios para orçamento específico
+router.get('/:budgetId/reports', auth, budgetAuth, async (req: BudgetAuthRequest, res) => {
+  try {
+    const budgetId = req.params.budgetId;
+    const { mode, period, month } = req.query;
+
+    // Definir período padrão se não especificado
+    let startDate: Date;
+    let endDate: Date = new Date();
+    
+    if (mode === 'monthly' && month) {
+      // Modo mensal: relatório de um mês específico
+      const [year, monthNum] = (month as string).split('-');
+      startDate = new Date(parseInt(year), parseInt(monthNum) - 1, 1);
+      endDate = new Date(parseInt(year), parseInt(monthNum), 0); // Último dia do mês
+    } else {
+      // Modo período: últimos X meses
+      const months = period === '3months' ? 3 : 
+                     period === '12months' ? 12 : 6; // default 6 meses
+      startDate = new Date();
+      startDate.setMonth(startDate.getMonth() - months);
+    }
+
+    // Buscar transações do período
+    const transactions = await prisma.transaction.findMany({
+      where: {
+        budgetId,
+        date: {
+          gte: startDate,
+          lte: endDate
+        }
+      },
+      include: {
+        category: true,
+        account: true
+      },
+      orderBy: {
+        date: 'desc'
+      }
+    });
+
+    // Calcular dados mensais
+    const monthlyData = [];
+    const monthsMap = new Map();
+
+    transactions.forEach(transaction => {
+      const date = new Date(transaction.date);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const monthName = date.toLocaleDateString('pt-BR', { year: 'numeric', month: 'short' });
+      
+      if (!monthsMap.has(monthKey)) {
+        monthsMap.set(monthKey, {
+          month: monthName,
+          income: 0,
+          expenses: 0,
+          balance: 0
+        });
+      }
+      
+      const monthData = monthsMap.get(monthKey);
+      const amount = parseFloat(transaction.amount.toString());
+      
+      if (transaction.type === 'INCOME') {
+        monthData.income += amount;
+      } else {
+        monthData.expenses += Math.abs(amount);
+      }
+    });
+
+    // Calcular balance para cada mês
+    monthsMap.forEach(data => {
+      data.balance = data.income - data.expenses;
+    });
+
+    monthlyData.push(...Array.from(monthsMap.values()));
+
+    // Calcular gastos por categoria
+    const categoryExpenses = new Map();
+    const categoryIncome = new Map();
+    let totalExpenses = 0;
+    let totalIncome = 0;
+
+    transactions.forEach(transaction => {
+      const amount = parseFloat(transaction.amount.toString());
+      const categoryName = transaction.category.name;
+      
+      if (transaction.type === 'EXPENSE') {
+        const absAmount = Math.abs(amount);
+        categoryExpenses.set(categoryName, (categoryExpenses.get(categoryName) || 0) + absAmount);
+        totalExpenses += absAmount;
+      } else {
+        categoryIncome.set(categoryName, (categoryIncome.get(categoryName) || 0) + amount);
+        totalIncome += amount;
+      }
+    });
+
+    // Converter para array com percentuais
+    const expensesByCategory = Array.from(categoryExpenses.entries()).map(([name, value]) => ({
+      name,
+      value,
+      percentage: totalExpenses > 0 ? (value / totalExpenses) * 100 : 0
+    }));
+
+    const incomeByCategory = Array.from(categoryIncome.entries()).map(([name, value]) => ({
+      name,
+      value,
+      percentage: totalIncome > 0 ? (value / totalIncome) * 100 : 0
+    }));
+
+    // Top gastos por categoria
+    const topExpenses = Array.from(categoryExpenses.entries())
+      .map(([category, amount]) => ({
+        category,
+        amount,
+        transactions: transactions.filter(t => 
+          t.category.name === category && t.type === 'EXPENSE'
+        ).length
+      }))
+      .sort((a, b) => b.amount - a.amount)
+      .slice(0, 10);
+
+    // Resumo
+    const summary = {
+      totalIncome,
+      totalExpenses,
+      netBalance: totalIncome - totalExpenses,
+      averageMonthlyIncome: monthlyData.length > 0 ? totalIncome / monthlyData.length : 0,
+      averageMonthlyExpenses: monthlyData.length > 0 ? totalExpenses / monthlyData.length : 0
+    };
+
+    res.json({
+      data: {
+        monthlyData: monthlyData.sort((a, b) => a.month.localeCompare(b.month)),
+        expensesByCategory: expensesByCategory.sort((a, b) => b.value - a.value),
+        incomeByCategory: incomeByCategory.sort((a, b) => b.value - a.value),
+        topExpenses,
+        summary
+      }
+    });
+
+  } catch (error) {
+    console.error('Error getting budget reports:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Rota de exportação de relatórios para orçamento específico
+router.get('/:budgetId/reports/export', auth, budgetAuth, async (req: BudgetAuthRequest, res) => {
+  try {
+    const budgetId = req.params.budgetId;
+    const { period, format } = req.query;
+
+    // Por enquanto, retorna uma mensagem indicando que a funcionalidade está em desenvolvimento
+    res.json({
+      message: `Exportação de relatórios em ${format || 'PDF'} para o período ${period || '6months'} está em desenvolvimento`,
+      budgetId,
+      period: period || '6months',
+      format: format || 'PDF'
+    });
+
+  } catch (error) {
+    console.error('Error exporting budget reports:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Rota de previsões para orçamento específico
+router.get('/:budgetId/reports/forecast', auth, budgetAuth, async (req: BudgetAuthRequest, res) => {
+  try {
+    const budgetId = req.params.budgetId;
+    const { period, type } = req.query;
+
+    // Buscar transações dos últimos meses para calcular previsões
+    const months = period === '3months' ? 3 : 
+                   period === '12months' ? 12 : 6; // default 6 meses
+    
+    const startDate = new Date();
+    startDate.setMonth(startDate.getMonth() - months);
+
+    const transactions = await prisma.transaction.findMany({
+      where: {
+        budgetId,
+        date: {
+          gte: startDate,
+          lte: new Date()
+        }
+      },
+      include: {
+        category: true
+      },
+      orderBy: {
+        date: 'desc'
+      }
+    });
+
+    // Calcular dados mensais históricos
+    const monthlyData = new Map();
+    
+    transactions.forEach(transaction => {
+      const date = new Date(transaction.date);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      
+      if (!monthlyData.has(monthKey)) {
+        monthlyData.set(monthKey, {
+          month: date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }),
+          income: 0,
+          expenses: 0,
+          balance: 0
+        });
+      }
+      
+      const monthData = monthlyData.get(monthKey);
+      const amount = parseFloat(transaction.amount.toString());
+      
+      if (transaction.type === 'INCOME') {
+        monthData.income += amount;
+      } else {
+        monthData.expenses += Math.abs(amount);
+      }
+    });
+
+    // Calcular balanço para cada mês
+    monthlyData.forEach(data => {
+      data.balance = data.income - data.expenses;
+    });
+
+    const historicalData = Array.from(monthlyData.values()).sort((a, b) => a.month.localeCompare(b.month));
+    
+    // Calcular médias e tendências
+    let avgIncome = 0;
+    let avgExpenses = 0;
+    let avgBalance = 0;
+    
+    if (historicalData.length > 0) {
+      avgIncome = historicalData.reduce((sum, d) => sum + d.income, 0) / historicalData.length;
+      avgExpenses = historicalData.reduce((sum, d) => sum + d.expenses, 0) / historicalData.length;
+      avgBalance = avgIncome - avgExpenses;
+    }
+
+    // Gerar previsões para os próximos 3 meses
+    const forecast = [];
+    const currentDate = new Date();
+    
+    for (let i = 1; i <= 3; i++) {
+      const forecastDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + i, 1);
+      const monthName = forecastDate.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
+      
+      // Adicionar pequena variação para previsão realística
+      const variation = 1 + (Math.random() - 0.5) * 0.1; // +/- 5%
+      
+      const forecastIncome = avgIncome * variation;
+      const forecastExpenses = avgExpenses * variation;
+      const forecastBalance = forecastIncome - forecastExpenses;
+      
+      forecast.push({
+        month: monthName,
+        historical: null,
+        predicted: type === 'income' ? forecastIncome : 
+                  type === 'expenses' ? forecastExpenses : forecastBalance,
+        optimistic: type === 'income' ? forecastIncome * 1.1 : 
+                   type === 'expenses' ? forecastExpenses * 0.9 : forecastBalance * 1.1,
+        pessimistic: type === 'income' ? forecastIncome * 0.9 : 
+                    type === 'expenses' ? forecastExpenses * 1.1 : forecastBalance * 0.9
+      });
+    }
+
+    // Adicionar dados históricos ao forecast
+    const forecastData = historicalData.map(data => ({
+      month: data.month,
+      historical: type === 'income' ? data.income : 
+                 type === 'expenses' ? data.expenses : data.balance,
+      predicted: null,
+      optimistic: null,
+      pessimistic: null
+    })).concat(forecast);
+
+    // Calcular tendência
+    let trend = 'stable';
+    let growthRate = 0;
+    
+    if (historicalData.length >= 2) {
+      const recent = historicalData[historicalData.length - 1];
+      const previous = historicalData[historicalData.length - 2];
+      
+      const recentValue = type === 'income' ? recent.income : 
+                         type === 'expenses' ? recent.expenses : recent.balance;
+      const previousValue = type === 'income' ? previous.income : 
+                           type === 'expenses' ? previous.expenses : previous.balance;
+      
+      if (previousValue !== 0) {
+        growthRate = ((recentValue - previousValue) / previousValue) * 100;
+        trend = growthRate > 5 ? 'up' : growthRate < -5 ? 'down' : 'stable';
+      }
+    }
+
+    const summary = {
+      nextMonthPrediction: forecast.length > 0 ? forecast[0].predicted : 0,
+      growthRate,
+      trend,
+      confidence: Math.min(85, 50 + (historicalData.length * 5)), // Mais dados = maior confiança
+      recommendation: trend === 'up' ? 'Tendência positiva mantida!' : 
+                     trend === 'down' ? 'Atenção: tendência de queda detectada.' : 
+                     'Comportamento estável nos últimos meses.'
+    };
+
+    res.json({
+      data: {
+        forecastData,
+        summary
+      }
+    });
+
+  } catch (error) {
+    console.error('Error getting budget forecast:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Rota de análise de orçamento para orçamento específico
+router.get('/:budgetId/analysis', auth, budgetAuth, async (req: BudgetAuthRequest, res) => {
+  try {
+    const budgetId = req.params.budgetId;
+
+    // Buscar itens de orçamento do orçamento específico
+    const budgetItems = await prisma.budgetItem.findMany({
+      where: {
+        budgetId: budgetId,
+        isActive: true
+      },
+      include: {
+        category: true
+      }
+    });
+
+    if (budgetItems.length === 0) {
+      res.json([]);
+      return;
+    }
+
+    // Calcular período atual (exemplo: mês atual)
+    const currentDate = new Date();
+    const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+
+    // Para cada item de orçamento, calcular gastos reais
+    const analysis = [];
+    for (const item of budgetItems) {
+      // Buscar gastos da categoria no período atual
+      const transactions = await prisma.transaction.findMany({
+        where: {
+          budgetId: budgetId,
+          categoryId: item.categoryId,
+          type: 'EXPENSE',
+          date: {
+            gte: startOfMonth,
+            lte: endOfMonth
+          }
+        }
+      });
+
+      const spentAmount = transactions.reduce((sum, t) => sum + Math.abs(parseFloat(t.amount.toString())), 0);
+      const budgetAmount = parseFloat(item.amount.toString());
+      const remainingAmount = budgetAmount - spentAmount;
+      const percentage = budgetAmount > 0 ? (spentAmount / budgetAmount) * 100 : 0;
+
+      let status: 'good' | 'warning' | 'exceeded' = 'good';
+      if (percentage > 100) status = 'exceeded';
+      else if (percentage > 80) status = 'warning';
+
+      analysis.push({
+        id: item.id,
+        category: {
+          id: item.category.id,
+          name: item.category.name,
+          type: item.category.type,
+          color: item.category.color || '#3B82F6'
+        },
+        budgetAmount,
+        spentAmount,
+        remainingAmount,
+        percentage: Math.round(percentage * 100) / 100,
+        status,
+        period: item.period
+      });
+    }
+
+    res.json(analysis);
+  } catch (error) {
+    console.error('Error getting budget analysis:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 export default router;

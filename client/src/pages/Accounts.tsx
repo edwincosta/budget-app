@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
-import { Plus, Pencil, Trash2, CreditCard } from 'lucide-react'
-import api from '@/services/api'
+import { Plus, Pencil, Trash2, CreditCard, Users } from 'lucide-react'
+import { accountService } from '@/services/api'
+import { useBudget } from '@/contexts/BudgetContext'
 
 interface Account {
   id: string
   name: string
-  type: 'CHECKING' | 'SAVINGS' | 'CREDIT_CARD' | 'INVESTMENT'
+  type: 'CHECKING' | 'SAVINGS' | 'CREDIT_CARD' | 'INVESTMENT' | 'CASH'
   balance: number
   inactive: boolean
   createdAt: string
@@ -15,10 +16,12 @@ const ACCOUNT_TYPES = {
   CHECKING: 'Conta Corrente',
   SAVINGS: 'Poupança',
   CREDIT_CARD: 'Cartão de Crédito',
-  INVESTMENT: 'Investimento'
+  INVESTMENT: 'Investimento',
+  CASH: 'Dinheiro'
 }
 
 const Accounts = () => {
+  const { activeBudget, isOwner } = useBudget();
   const [accounts, setAccounts] = useState<Account[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -33,8 +36,9 @@ const Accounts = () => {
   const loadAccounts = async () => {
     try {
       setIsLoading(true)
-      const response = await api.get('/accounts')
-      setAccounts(response.data.data || [])
+      const budgetId = activeBudget?.budget?.id;
+      const accountsData = await accountService.getAccounts(budgetId)
+      setAccounts(accountsData || [])
     } catch (error) {
       console.error('Error loading accounts:', error)
     } finally {
@@ -44,7 +48,7 @@ const Accounts = () => {
 
   useEffect(() => {
     loadAccounts()
-  }, [])
+  }, [activeBudget])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -55,11 +59,12 @@ const Accounts = () => {
     }
 
     try {
+      const budgetId = activeBudget?.budget?.id;
       if (editingAccount) {
-        await api.put(`/accounts/${editingAccount.id}`, formData)
+        await accountService.updateAccount(editingAccount.id, formData, budgetId)
         console.log('Conta atualizada com sucesso!')
       } else {
-        await api.post('/accounts', formData)
+        await accountService.createAccount(formData, budgetId)
         console.log('Conta criada com sucesso!')
       }
       
@@ -97,8 +102,9 @@ const Accounts = () => {
       console.log('Current token:', localStorage.getItem('token') ? 'Token exists' : 'No token found');
       console.log('API base URL configured');
       
-      const response = await api.delete(`/accounts/${id}`)
-      console.log('Delete response:', response.data);
+      const budgetId = activeBudget?.budget?.id;
+      await accountService.deleteAccount(id, budgetId)
+      console.log('Delete response: success');
       alert('Conta excluída com sucesso!')
       await loadAccounts()
     } catch (error: any) {
@@ -160,15 +166,34 @@ const Accounts = () => {
 
   return (
     <div className="space-y-6">
+      {/* Banner de acesso compartilhado */}
+      {activeBudget && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <Users className="h-5 w-5 text-blue-600 mr-3" />
+            <div>
+              <h3 className="text-sm font-medium text-blue-800">
+                Visualizando: {activeBudget.budget?.name}
+              </h3>
+              <p className="text-sm text-blue-600">
+                Orçamento compartilhado por {activeBudget.budget?.owner?.name} • Permissão: {activeBudget.permission === 'READ' ? 'Visualização' : 'Edição'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Contas</h1>
-        <button
-          onClick={openCreateModal}
-          className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors w-full sm:w-auto"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Nova Conta
-        </button>
+        {(isOwner || activeBudget?.permission === 'WRITE') && (
+          <button
+            onClick={openCreateModal}
+            className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors w-full sm:w-auto"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Nova Conta
+          </button>
+        )}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -184,20 +209,22 @@ const Accounts = () => {
                   {account.name}
                 </h3>
               </div>
-              <div className="flex items-center space-x-2 flex-shrink-0">
-                <button
-                  onClick={() => handleEdit(account)}
-                  className="p-1 text-gray-600 hover:text-blue-600 transition-colors"
-                >
-                  <Pencil className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => handleDelete(account.id)}
-                  className="p-1 text-gray-600 hover:text-red-600 transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
+              {(isOwner || activeBudget?.permission === 'WRITE') && (
+                <div className="flex items-center space-x-2 flex-shrink-0">
+                  <button
+                    onClick={() => handleEdit(account)}
+                    className="p-1 text-gray-600 hover:text-blue-600 transition-colors"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(account.id)}
+                    className="p-1 text-gray-600 hover:text-red-600 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
             </div>
             
             <div className="space-y-2">

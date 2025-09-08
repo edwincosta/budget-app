@@ -1,5 +1,5 @@
 import axios, { AxiosResponse } from 'axios';
-import { AuthResponse, User, Budget, BudgetAnalysis, Category, BudgetShare, UserShare, ShareInviteRequest, ShareResponse } from '@/types';
+import { AuthResponse, User, Budget, BudgetAnalysis, Category, Account, Transaction, UserShare, ShareInviteRequest, ShareResponse } from '@/types';
 import { setCookie, getCookie, deleteCookie } from '@/utils';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -132,20 +132,21 @@ export const authService = {
 };
 
 export const dashboardService = {
-  async getStats(): Promise<{
+  async getStats(budgetId?: string): Promise<{
     totalBalance: number;
     monthlyIncome: number;
     monthlyExpenses: number;
     accountsCount: number;
     recentTransactions: any[];
   }> {
-    const response = await api.get('/dashboard/stats');
+    const url = budgetId ? `/budgets/${budgetId}/dashboard/stats` : '/dashboard/stats';
+    const response = await api.get(url);
     return response.data.data;
   },
 };
 
 export const reportsService = {
-  async getReports(params: string | { mode: string; period?: string; month?: string }): Promise<{
+  async getReports(params: string | { mode: string; period?: string; month?: string }, budgetId?: string): Promise<{
     monthlyData: Array<{
       month: string;
       income: number;
@@ -175,7 +176,8 @@ export const reportsService = {
       averageMonthlyExpenses: number;
     };
   }> {
-    let url = '/reports';
+    let baseUrl = budgetId ? `/budgets/${budgetId}/reports` : '/reports';
+    let url = baseUrl;
     
     if (typeof params === 'string') {
       // Legacy support for period-only requests
@@ -193,8 +195,9 @@ export const reportsService = {
     return response.data.data;
   },
 
-  async exportReport(period: string, format: 'pdf' | 'excel'): Promise<void> {
-    const response = await api.get(`/reports/export?period=${period}&format=${format}`, {
+  async exportReport(period: string, format: 'pdf' | 'excel', budgetId?: string): Promise<void> {
+    const baseUrl = budgetId ? `/budgets/${budgetId}/reports` : '/reports';
+    const response = await api.get(`${baseUrl}/export?period=${period}&format=${format}`, {
       responseType: 'blob'
     });
     
@@ -210,35 +213,91 @@ export const reportsService = {
 };
 
 export const budgetService = {
-  async getBudgets(): Promise<Budget[]> {
-    const response: AxiosResponse<Budget[]> = await api.get('/budgets/items');
+  async getBudgets(budgetId?: string): Promise<Budget[]> {
+    const url = budgetId ? `/budgets/${budgetId}/items` : '/budgets/items';
+    const response: AxiosResponse<Budget[]> = await api.get(url);
     return response.data;
   },
 
-  async createBudget(budget: Omit<Budget, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'category'>): Promise<Budget> {
-    const response: AxiosResponse<Budget> = await api.post('/budgets/items', budget);
+  async createBudget(budget: Omit<Budget, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'category'>, budgetId?: string): Promise<Budget> {
+    const url = budgetId ? `/budgets/${budgetId}/items` : '/budgets/items';
+    const response: AxiosResponse<Budget> = await api.post(url, budget);
     return response.data;
   },
 
-  async updateBudget(id: string, budget: Partial<Omit<Budget, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'category'>>): Promise<Budget> {
-    const response: AxiosResponse<Budget> = await api.put(`/budgets/items/${id}`, budget);
+  async updateBudget(id: string, budget: Partial<Omit<Budget, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'category'>>, budgetId?: string): Promise<Budget> {
+    const url = budgetId ? `/budgets/${budgetId}/items/${id}` : `/budgets/items/${id}`;
+    const response: AxiosResponse<Budget> = await api.put(url, budget);
     return response.data;
   },
 
-  async deleteBudget(id: string): Promise<void> {
-    await api.delete(`/budgets/items/${id}`);
+  async deleteBudget(id: string, budgetId?: string): Promise<void> {
+    const url = budgetId ? `/budgets/${budgetId}/items/${id}` : `/budgets/items/${id}`;
+    await api.delete(url);
   },
 
-  async getBudgetAnalysis(): Promise<BudgetAnalysis[]> {
-    const response: AxiosResponse<BudgetAnalysis[]> = await api.get('/budgets/analysis');
+  async getBudgetAnalysis(budgetId?: string): Promise<BudgetAnalysis[]> {
+    const url = budgetId ? `/budgets/${budgetId}/analysis` : '/budgets/analysis';
+    const response: AxiosResponse<BudgetAnalysis[]> = await api.get(url);
     return response.data;
   },
 };
 
 export const categoryService = {
-  async getCategories(): Promise<Category[]> {
-    const response: AxiosResponse<{ data: Category[] }> = await api.get('/categories');
+  async getCategories(budgetId?: string): Promise<Category[]> {
+    const url = budgetId ? `/budgets/${budgetId}/categories` : '/categories';
+    const response: AxiosResponse<{ data: Category[] }> = await api.get(url);
     return response.data.data || [];
+  },
+};
+
+export const accountService = {
+  async getAccounts(budgetId?: string): Promise<Account[]> {
+    const url = budgetId ? `/budgets/${budgetId}/accounts` : '/accounts';
+    const response: AxiosResponse<{ data: Account[] }> = await api.get(url);
+    return response.data.data || [];
+  },
+
+  async createAccount(account: Omit<Account, 'id' | 'userId' | 'createdAt' | 'updatedAt'>, budgetId?: string): Promise<Account> {
+    const url = budgetId ? `/budgets/${budgetId}/accounts` : '/accounts';
+    const response: AxiosResponse<{ data: Account }> = await api.post(url, account);
+    return response.data.data;
+  },
+
+  async updateAccount(id: string, account: Partial<Omit<Account, 'id' | 'userId' | 'createdAt' | 'updatedAt'>>, budgetId?: string): Promise<Account> {
+    const url = budgetId ? `/budgets/${budgetId}/accounts/${id}` : `/accounts/${id}`;
+    const response: AxiosResponse<{ data: Account }> = await api.put(url, account);
+    return response.data.data;
+  },
+
+  async deleteAccount(id: string, budgetId?: string): Promise<void> {
+    const url = budgetId ? `/budgets/${budgetId}/accounts/${id}` : `/accounts/${id}`;
+    await api.delete(url);
+  },
+};
+
+export const transactionService = {
+  async getTransactions(budgetId?: string): Promise<Transaction[]> {
+    const url = budgetId ? `/budgets/${budgetId}/transactions` : '/transactions';
+    const response: AxiosResponse<{ data: Transaction[] }> = await api.get(url);
+    return response.data.data || [];
+  },
+
+  async createTransaction(transaction: Omit<Transaction, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'account' | 'category'>, budgetId?: string): Promise<Transaction> {
+    const url = budgetId ? `/budgets/${budgetId}/transactions` : '/transactions';
+    const response: AxiosResponse<{ data: Transaction }> = await api.post(url, transaction);
+    return response.data.data;
+  },
+
+  async updateTransaction(id: string, transaction: Partial<Omit<Transaction, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'account' | 'category'>>, budgetId?: string): Promise<Transaction> {
+    const url = budgetId ? `/budgets/${budgetId}/transactions/${id}` : `/transactions/${id}`;
+    const response: AxiosResponse<{ data: Transaction }> = await api.put(url, transaction);
+    return response.data.data;
+  },
+
+  async deleteTransaction(id: string, budgetId?: string): Promise<void> {
+    const url = budgetId ? `/budgets/${budgetId}/transactions/${id}` : `/transactions/${id}`;
+    await api.delete(url);
   },
 };
 

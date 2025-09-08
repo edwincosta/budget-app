@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { sharingService } from '@/services/api';
-import { UserShare, SharePermission, ShareResponse } from '@/types';
+import { UserShare, SharePermission } from '@/types';
+import { useBudget } from '@/contexts/BudgetContext';
 
 const ShareManager: React.FC = () => {
+  const { activeBudget, setActiveBudget, refreshAvailableBudgets } = useBudget();
   const [invitations, setInvitations] = useState<UserShare[]>([]);
   const [sentInvitations, setSentInvitations] = useState<UserShare[]>([]);
   const [activeShares, setActiveShares] = useState<{ sharedByMe: UserShare[]; sharedWithMe: UserShare[] }>({
@@ -52,6 +54,9 @@ const ShareManager: React.FC = () => {
       setInvitations(invitationsData || []);
       setSentInvitations(sentInvitationsData || []);
       setActiveShares(activeSharesData || { sharedByMe: [], sharedWithMe: [] });
+      
+      // Atualizar contexto com novos dados
+      await refreshAvailableBudgets();
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
       setHasError(true);
@@ -82,6 +87,7 @@ const ShareManager: React.FC = () => {
       
       // Recarregar dados
       await loadData();
+      await refreshAvailableBudgets();
     } catch (error: any) {
       console.error('Erro ao enviar convite:', error);
       const errorMessage = error.response?.data?.message || error.message || 'Erro desconhecido';
@@ -95,6 +101,7 @@ const ShareManager: React.FC = () => {
       
       toast.success('Convite aceito com sucesso!');
       await loadData();
+      await refreshAvailableBudgets();
     } catch (error: any) {
       console.error('Erro ao aceitar convite:', error);
       const errorMessage = error.response?.data?.message || error.message || 'Erro desconhecido';
@@ -108,6 +115,7 @@ const ShareManager: React.FC = () => {
       
       toast.success('Convite rejeitado');
       await loadData();
+      await refreshAvailableBudgets();
     } catch (error: any) {
       console.error('Erro ao rejeitar convite:', error);
       const errorMessage = error.response?.data?.message || error.message || 'Erro desconhecido';
@@ -121,6 +129,7 @@ const ShareManager: React.FC = () => {
       
       toast.success('Compartilhamento revogado');
       await loadData();
+      await refreshAvailableBudgets();
     } catch (error: any) {
       console.error('Erro ao revogar compartilhamento:', error);
       const errorMessage = error.response?.data?.message || error.message || 'Erro desconhecido';
@@ -181,6 +190,30 @@ const ShareManager: React.FC = () => {
         >
           Convidar Usuário
         </button>
+      </div>
+
+      {/* Indicador de orçamento ativo */}
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+        <div className="flex items-center">
+          <div className="flex-shrink-0">
+            {activeBudget ? (
+              <span className="text-2xl">📊</span>
+            ) : (
+              <span className="text-2xl">🏠</span>
+            )}
+          </div>
+          <div className="ml-3">
+            <h3 className="text-sm font-medium text-gray-900">
+              Orçamento ativo atual
+            </h3>
+            <p className="text-sm text-gray-600">
+              {activeBudget 
+                ? `${activeBudget.budget?.name} (compartilhado por ${activeBudget.budget?.owner?.name})`
+                : 'Meu orçamento pessoal'
+              }
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Formulário de Convite */}
@@ -395,6 +428,86 @@ const ShareManager: React.FC = () => {
             <p className="text-sm text-gray-400">Convide outros usuários para compartilhar seus orçamentos</p>
           </div>
         )}
+      </div>
+
+      {/* Seleção de Orçamento Ativo */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-lg font-semibold mb-4">Orçamento Ativo</h2>
+        <div className="space-y-4">
+          <div className="bg-gray-50 rounded-lg p-4">
+            <p className="text-sm text-gray-600 mb-3">
+              Selecione qual orçamento você deseja visualizar. Esta configuração será salva e aplicada automaticamente no próximo login.
+            </p>
+            
+            <div className="space-y-3">
+              {/* Opção do próprio orçamento */}
+              <label className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                <input
+                  type="radio"
+                  name="activeBudget"
+                  checked={!activeBudget}
+                  onChange={() => setActiveBudget(null)}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500"
+                />
+                <div className="flex items-center space-x-2">
+                  <span>🏠</span>
+                  <div>
+                    <div className="font-medium text-gray-900">Meu Orçamento</div>
+                    <div className="text-sm text-gray-500">Seus dados pessoais</div>
+                  </div>
+                </div>
+              </label>
+
+              {/* Orçamentos compartilhados */}
+              {activeShares.sharedWithMe.map((share) => (
+                <label key={share.id} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="activeBudget"
+                    checked={activeBudget?.id === share.id}
+                    onChange={() => setActiveBudget(share)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500"
+                  />
+                  <div className="flex items-center space-x-2">
+                    <span>📊</span>
+                    <div>
+                      <div className="font-medium text-gray-900">{share.budget?.name || 'Orçamento Compartilhado'}</div>
+                      <div className="text-sm text-gray-500">
+                        Por {share.budget?.owner?.name} • {share.permission === 'READ' ? 'Visualização' : 'Edição'}
+                      </div>
+                    </div>
+                  </div>
+                </label>
+              ))}
+            </div>
+
+            {activeShares.sharedWithMe.length === 0 && (
+              <div className="text-center py-4 text-gray-500 text-sm">
+                Nenhum orçamento compartilhado disponível para seleção
+              </div>
+            )}
+          </div>
+
+          {activeBudget && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0 mt-1">
+                  <svg className="h-5 w-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-blue-800">
+                    Orçamento ativo: {activeBudget.budget?.name}
+                  </p>
+                  <p className="text-sm text-blue-600">
+                    Todas as páginas do sistema agora mostrarão dados deste orçamento compartilhado.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Lista de Compartilhamentos Ativos */}

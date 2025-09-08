@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
-import { Plus, ArrowUpRight, ArrowDownLeft, Search, Filter, Pencil, Trash2 } from 'lucide-react'
-import api from '@/services/api'
+import { Plus, ArrowUpRight, ArrowDownLeft, Search, Filter, Pencil, Trash2, Users } from 'lucide-react'
+import { transactionService, accountService, categoryService } from '@/services/api'
+import { useBudget } from '@/contexts/BudgetContext'
 
 interface Transaction {
   id: string
   amount: number
   description: string
-  type: 'INCOME' | 'EXPENSE'
+  type: 'INCOME' | 'EXPENSE' | 'TRANSFER'
   date: string
   category?: {
     id: string
@@ -33,6 +34,7 @@ interface Category {
 }
 
 const Transactions = () => {
+  const { activeBudget, isOwner } = useBudget();
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [accounts, setAccounts] = useState<Account[]>([])
   const [categories, setCategories] = useState<Category[]>([])
@@ -44,7 +46,7 @@ const Transactions = () => {
   const [formData, setFormData] = useState({
     description: '',
     amount: 0,
-    type: 'EXPENSE' as 'INCOME' | 'EXPENSE',
+    type: 'EXPENSE' as 'INCOME' | 'EXPENSE' | 'TRANSFER',
     date: new Date().toISOString().split('T')[0],
     accountId: '',
     categoryId: ''
@@ -53,8 +55,9 @@ const Transactions = () => {
   const loadTransactions = async () => {
     try {
       setIsLoading(true)
-      const response = await api.get('/transactions')
-      setTransactions(response.data.data || [])
+      const budgetId = activeBudget?.budget?.id;
+      const transactionsData = await transactionService.getTransactions(budgetId)
+      setTransactions(transactionsData || [])
     } catch (error) {
       console.error('Error loading transactions:', error)
     } finally {
@@ -64,8 +67,9 @@ const Transactions = () => {
 
   const loadAccounts = async () => {
     try {
-      const response = await api.get('/accounts')
-      setAccounts(response.data.data || [])
+      const budgetId = activeBudget?.budget?.id;
+      const accountsData = await accountService.getAccounts(budgetId)
+      setAccounts(accountsData || [])
     } catch (error) {
       console.error('Error loading accounts:', error)
     }
@@ -73,8 +77,9 @@ const Transactions = () => {
 
   const loadCategories = async () => {
     try {
-      const response = await api.get('/categories')
-      setCategories(response.data.data || [])
+      const budgetId = activeBudget?.budget?.id;
+      const categoriesData = await categoryService.getCategories(budgetId)
+      setCategories(categoriesData || [])
     } catch (error) {
       console.error('Error loading categories:', error)
     }
@@ -84,7 +89,7 @@ const Transactions = () => {
     loadTransactions()
     loadAccounts()
     loadCategories()
-  }, [])
+  }, [activeBudget])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -105,16 +110,17 @@ const Transactions = () => {
     }
 
     try {
+      const budgetId = activeBudget?.budget?.id;
       const transactionData = {
         ...formData,
         date: new Date(formData.date).toISOString()
       }
 
       if (editingTransaction) {
-        await api.put(`/transactions/${editingTransaction.id}`, transactionData)
+        await transactionService.updateTransaction(editingTransaction.id, transactionData, budgetId)
         console.log('Transação atualizada com sucesso!')
       } else {
-        await api.post('/transactions', transactionData)
+        await transactionService.createTransaction(transactionData, budgetId)
         console.log('Transação criada com sucesso!')
       }
       
@@ -154,7 +160,8 @@ const Transactions = () => {
     }
 
     try {
-      await api.delete(`/transactions/${id}`)
+      const budgetId = activeBudget?.budget?.id;
+      await transactionService.deleteTransaction(id, budgetId)
       console.log('Transação excluída com sucesso!')
       loadTransactions()
     } catch (error: any) {
@@ -217,15 +224,34 @@ const Transactions = () => {
 
   return (
     <div className="space-y-6">
+      {/* Banner de acesso compartilhado */}
+      {activeBudget && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <Users className="h-5 w-5 text-blue-600 mr-3" />
+            <div>
+              <h3 className="text-sm font-medium text-blue-800">
+                Visualizando: {activeBudget.budget?.name}
+              </h3>
+              <p className="text-sm text-blue-600">
+                Orçamento compartilhado por {activeBudget.budget?.owner?.name} • Permissão: {activeBudget.permission === 'READ' ? 'Visualização' : 'Edição'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Transações</h1>
-        <button 
-          onClick={openCreateModal}
-          className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors w-full sm:w-auto"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Nova Transação
-        </button>
+        {(isOwner || activeBudget?.permission === 'WRITE') && (
+          <button 
+            onClick={openCreateModal}
+            className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors w-full sm:w-auto"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Nova Transação
+          </button>
+        )}
       </div>
 
       {/* Resumo */}
@@ -373,22 +399,24 @@ const Transactions = () => {
                       </div>
                     </div>
                     
-                    <div className="flex items-center space-x-1 flex-shrink-0">
-                      <button
-                        onClick={() => handleEdit(transaction)}
-                        className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="Editar"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(transaction.id)}
-                        className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Excluir"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                    {(isOwner || activeBudget?.permission === 'WRITE') && (
+                      <div className="flex items-center space-x-1 flex-shrink-0">
+                        <button
+                          onClick={() => handleEdit(transaction)}
+                          className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Editar"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(transaction.id)}
+                          className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Excluir"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                   
                   {/* Transaction details in cards */}
@@ -466,22 +494,24 @@ const Transactions = () => {
                       </div>
                     </div>
                     
-                    <div className="flex items-center space-x-1 md:space-x-2">
-                      <button
-                        onClick={() => handleEdit(transaction)}
-                        className="p-1 md:p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                        title="Editar"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(transaction.id)}
-                        className="p-1 md:p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                        title="Excluir"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                    {(isOwner || activeBudget?.permission === 'WRITE') && (
+                      <div className="flex items-center space-x-1 md:space-x-2">
+                        <button
+                          onClick={() => handleEdit(transaction)}
+                          className="p-1 md:p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                          title="Editar"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(transaction.id)}
+                          className="p-1 md:p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                          title="Excluir"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

@@ -20,9 +20,10 @@ interface Budget {
 
 interface BudgetAnalysisProps {
   period: string;
+  budgetId?: string;
 }
 
-export default function BudgetAnalysis({ period }: BudgetAnalysisProps) {
+export default function BudgetAnalysis({ period, budgetId }: BudgetAnalysisProps) {
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalBudget, setTotalBudget] = useState(0);
@@ -30,12 +31,12 @@ export default function BudgetAnalysis({ period }: BudgetAnalysisProps) {
 
   useEffect(() => {
     loadBudgetData();
-  }, [period]);
+  }, [period, budgetId]);
 
   const loadBudgetData = async () => {
     try {
       setLoading(true);
-      const analysisData = await budgetService.getBudgetAnalysis();
+      const analysisData = await budgetService.getBudgetAnalysis(budgetId);
       setBudgets(analysisData);
       
       const totalBudgetAmount = analysisData.reduce((sum, budget) => sum + budget.budgetAmount, 0);

@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts'
-import { Calendar, DollarSign, TrendingUp, TrendingDown, PieChart as PieChartIcon, BarChart3, FileText, Download, GitCompare, Target, Activity } from 'lucide-react'
+import { Calendar, DollarSign, TrendingUp, TrendingDown, PieChart as PieChartIcon, BarChart3, FileText, Download, GitCompare, Target, Activity, Users } from 'lucide-react'
 import { reportsService } from '@/services/api'
 import PerformanceComparison from '@/components/PerformanceComparison'
 import BudgetAnalysis from '@/components/BudgetAnalysis'
 import FinancialForecast from '@/components/FinancialForecast'
 import MonthlyDetail from '@/components/MonthlyDetail'
+import { useBudget } from '@/contexts/BudgetContext'
 
 interface MonthlyData {
   month: string;
@@ -41,6 +42,7 @@ interface ReportsData {
 }
 
 export default function Reports() {
+  const { activeBudget } = useBudget();
   const [data, setData] = useState<ReportsData>({
     monthlyData: [],
     expensesByCategory: [],
@@ -65,7 +67,7 @@ export default function Reports() {
 
   useEffect(() => {
     loadReports();
-  }, [selectedPeriod, selectedMonth, viewMode]);
+  }, [selectedPeriod, selectedMonth, viewMode, activeBudget]);
 
   const loadReports = async () => {
     try {
@@ -74,10 +76,12 @@ export default function Reports() {
         ? { mode: 'monthly', month: selectedMonth }
         : { mode: 'period', period: selectedPeriod };
       
-      const reportsData = await reportsService.getReports(params);
+      const budgetId = activeBudget?.budget?.id;
+      const reportsData = await reportsService.getReports(params, budgetId);
       setData(reportsData);
     } catch (error) {
       console.error('Error loading reports:', error);
+      console.error('Error details:', (error as any)?.response?.data || (error as Error)?.message);
       // Reset to empty data when there's an error
       setData({
         monthlyData: [],
@@ -108,7 +112,8 @@ export default function Reports() {
 
   const exportReport = async (format: 'pdf' | 'excel') => {
     try {
-      await reportsService.exportReport(selectedPeriod, format);
+      const budgetId = activeBudget?.budget?.id;
+      await reportsService.exportReport(selectedPeriod, format, budgetId);
     } catch (error) {
       console.error('Error exporting report:', error);
     }
@@ -124,6 +129,24 @@ export default function Reports() {
 
   return (
     <div className="space-y-6">
+      
+      {/* Banner de acesso compartilhado */}
+      {activeBudget && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <Users className="h-5 w-5 text-blue-600 mr-3" />
+            <div>
+              <h3 className="text-sm font-medium text-blue-800">
+                Visualizando: {activeBudget.budget?.name}
+              </h3>
+              <p className="text-sm text-blue-600">
+                Orçamento compartilhado por {activeBudget.budget?.owner?.name} • Permissão: {activeBudget.permission === 'READ' ? 'Visualização' : 'Edição'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 lg:gap-6">
         <div>
@@ -642,19 +665,31 @@ export default function Reports() {
       )}
 
       {activeReport === 'budget' && (
-        <BudgetAnalysis period={viewMode === 'monthly' ? selectedMonth : selectedPeriod} />
+        <BudgetAnalysis 
+          period={viewMode === 'monthly' ? selectedMonth : selectedPeriod} 
+          budgetId={activeBudget?.budget?.id}
+        />
       )}
 
       {activeReport === 'comparison' && (
-        <PerformanceComparison selectedPeriod={viewMode === 'monthly' ? selectedMonth : selectedPeriod} />
+        <PerformanceComparison 
+          selectedPeriod={viewMode === 'monthly' ? selectedMonth : selectedPeriod} 
+          budgetId={activeBudget?.budget?.id}
+        />
       )}
 
       {activeReport === 'forecast' && (
-        <FinancialForecast period={viewMode === 'monthly' ? selectedMonth : selectedPeriod} />
+        <FinancialForecast 
+          period={viewMode === 'monthly' ? selectedMonth : selectedPeriod} 
+          budgetId={activeBudget?.budget?.id}
+        />
       )}
 
       {activeReport === 'daily' && viewMode === 'monthly' && (
-        <MonthlyDetail selectedMonth={selectedMonth} />
+        <MonthlyDetail 
+          selectedMonth={selectedMonth} 
+          budgetId={activeBudget?.budget?.id}
+        />
       )}
 
       {activeReport === 'detailed' && (

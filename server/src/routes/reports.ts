@@ -526,15 +526,38 @@ async function handleForecast(req: AuthRequest, res: Response) {
       });
     }
 
+    // Convert to the same format used by shared budgets
+    const forecastData = [];
+    
+    // Add historical data (empty for now, could be enhanced later)
+    
+    // Add forecast data in the standardized format
+    forecast.forEach(item => {
+      forecastData.push({
+        month: item.month,
+        historical: null, // Could add historical data here if needed
+        predicted: item.savings, // Default to savings/balance
+        optimistic: item.savings * 1.1,
+        pessimistic: item.savings * 0.9
+      });
+    });
+
+    // Calculate summary metrics
+    const avgSavings = toNumberForJson(subtractDecimals(avgIncome, avgExpenses));
+    const summary = {
+      nextMonthPrediction: forecast.length > 0 ? forecast[0].savings : 0,
+      growthRate: 0, // Could calculate based on historical trends
+      trend: avgSavings > 0 ? 'up' : avgSavings < 0 ? 'down' : 'stable',
+      confidence: forecast.length > 0 ? forecast[0].confidence : 75,
+      recommendation: avgSavings > 0 ? 
+        'Tendência positiva de poupança!' : 
+        'Atenção aos gastos para melhorar o balanço.'
+    };
+
     res.json({
-      success: true,
       data: {
-        trends: {
-          avgMonthlyIncome: toNumberForJson(avgIncome),
-          avgMonthlyExpenses: toNumberForJson(avgExpenses),
-          avgMonthlySavings: toNumberForJson(subtractDecimals(avgIncome, avgExpenses))
-        },
-        forecast
+        forecastData,
+        summary
       }
     });
 

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { DollarSign, TrendingUp, TrendingDown, CreditCard, Users } from 'lucide-react'
 import { dashboardService } from '@/services/api'
 import { useSearchParams } from 'react-router-dom'
+import { useBudget } from '@/contexts/BudgetContext'
 
 interface DashboardStats {
   totalBalance: number;
@@ -14,6 +15,7 @@ interface DashboardStats {
 export default function Dashboard() {
   const [searchParams] = useSearchParams();
   const sharedUserId = searchParams.get('sharedUser');
+  const { activeBudget } = useBudget();
   const [stats, setStats] = useState<DashboardStats>({
     totalBalance: 0,
     monthlyIncome: 0,
@@ -25,11 +27,12 @@ export default function Dashboard() {
 
   useEffect(() => {
     loadStats();
-  }, []);
+  }, [activeBudget]);
 
   const loadStats = async () => {
     try {
-      const data = await dashboardService.getStats();
+      const budgetId = activeBudget?.budget?.id;
+      const data = await dashboardService.getStats(budgetId);
       setStats(data);
     } catch (error) {
       console.error('Error loading dashboard stats:', error);
@@ -71,16 +74,22 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       {/* Banner de acesso compartilhado */}
-      {sharedUserId && (
+      {(activeBudget || sharedUserId) && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-center">
             <Users className="h-5 w-5 text-blue-600 mr-3" />
             <div>
               <h3 className="text-sm font-medium text-blue-800">
-                Visualizando dados compartilhados
+                {activeBudget 
+                  ? `Visualizando: ${activeBudget.budget?.name}`
+                  : 'Visualizando dados compartilhados'
+                }
               </h3>
               <p className="text-sm text-blue-600">
-                Você está visualizando os dados financeiros de outro usuário
+                {activeBudget 
+                  ? `Orçamento compartilhado por ${activeBudget.budget?.owner?.name} • Permissão: ${activeBudget.permission === 'READ' ? 'Visualização' : 'Edição'}`
+                  : 'Você está visualizando os dados financeiros de outro usuário'
+                }
               </p>
             </div>
           </div>
@@ -90,7 +99,7 @@ export default function Dashboard() {
       <div>
         <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
         <p className="text-gray-600">
-          {sharedUserId ? 'Dados compartilhados' : 'Visão geral das suas finanças'}
+          {activeBudget ? 'Dados do orçamento compartilhado' : 'Visão geral das suas finanças'}
         </p>
       </div>
 
