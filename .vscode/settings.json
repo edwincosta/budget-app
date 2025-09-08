@@ -1,0 +1,19 @@
+{
+    "github.copilot.enable": {
+        "*": true,
+        "yaml": false,
+        "plaintext": false
+    },
+    "github.copilot.inlineSuggest.enable": true,
+    "github.copilot.suggestions.count": 3,
+    "files.associations": {
+        ".copilot-*": "markdown"
+    },
+    "typescript.preferences.noSemicolons": "off",
+    "editor.formatOnSave": true,
+    "typescript.updateImportsOnFileMove.enabled": "always",
+    "emmet.includeLanguages": {
+        "typescript": "html",
+        "typescriptreact": "html"
+    }
+}

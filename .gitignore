@@ -68,7 +68,8 @@ jspm_packages/
 .dynamodb/
 
 # IDE
-.vscode/
+.vscode/launch.json
+.vscode/tasks.json
 .idea/
 *.swp
 *.swo

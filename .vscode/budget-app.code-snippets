@@ -1,0 +1,73 @@
+{
+    "Budget Route Template": {
+        "prefix": "budget-route",
+        "body": [
+            "// @route   ${1:METHOD} /api/${2:endpoint}",
+            "// @desc    ${3:Description}",
+            "// @access  Private",
+            "router.${4:method}('${5:path}', auth, budgetAuth, async (req: AuthRequest, res: Response): Promise<void> => {",
+            "  try {",
+            "    const budgetId = req.budget!.id;",
+            "    $0",
+            "  } catch (error) {",
+            "    console.error('Error in ${2:endpoint}:', error);",
+            "    res.status(500).json({ message: 'Server error' });",
+            "  }",
+            "});"
+        ],
+        "description": "Template para rotas do Budget App com middleware de autenticação"
+    },
+    "React Component Template": {
+        "prefix": "budget-component",
+        "body": [
+            "import React from 'react';",
+            "",
+            "interface ${1:ComponentName}Props {",
+            "  $2",
+            "}",
+            "",
+            "const ${1:ComponentName}: React.FC<${1:ComponentName}Props> = ({ $3 }) => {",
+            "  return (",
+            "    <div className=\"${4:container mx-auto p-4}\">",
+            "      $0",
+            "    </div>",
+            "  );",
+            "};",
+            "",
+            "export default ${1:ComponentName};"
+        ],
+        "description": "Template para componentes React do Budget App"
+    },
+    "Prisma Model Template": {
+        "prefix": "budget-model",
+        "body": [
+            "model ${1:ModelName} {",
+            "  id       String   @id @default(cuid())",
+            "  ${2:field}   ${3:String}",
+            "  budgetId String",
+            "  createdAt DateTime @default(now())",
+            "  updatedAt DateTime @updatedAt",
+            "",
+            "  // Relacionamentos",
+            "  budget   Budget   @relation(fields: [budgetId], references: [id], onDelete: Cascade)",
+            "",
+            "  @@map(\"${4:table_name}\")",
+            "}"
+        ],
+        "description": "Template para modelos Prisma do Budget App"
+    },
+    "API Service Template": {
+        "prefix": "budget-service",
+        "body": [
+            "export const ${1:serviceName} = {",
+            "  async ${2:methodName}(${3:params}): Promise<${4:ReturnType}> {",
+            "    const response = await api.${5:method}(`/api/${6:endpoint}`, ${7:data});",
+            "    return response.data;",
+            "  },",
+            "",
+            "  $0",
+            "};"
+        ],
+        "description": "Template para serviços de API do Budget App"
+    }
+}
