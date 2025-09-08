@@ -44,15 +44,23 @@ export default function MonthlyDetail({ selectedMonth, budgetId }: MonthlyDetail
     try {
       setLoading(true);
       
+      // Use the same API service pattern as other components
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      const token = localStorage.getItem('token') || document.cookie
+        .split('; ')
+        .find(row => row.startsWith('auth_token='))
+        ?.split('=')[1];
+      
       // Build URL with optional budgetId
       const baseUrl = budgetId 
-        ? `/api/reports/monthly-detail/${budgetId}` 
-        : '/api/reports/monthly-detail';
+        ? `${API_URL}/api/reports/monthly-detail/${budgetId}` 
+        : `${API_URL}/api/reports/monthly-detail`;
       
       // Fetch monthly detail data from backend
       const response = await fetch(`${baseUrl}?month=${selectedMonth}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
         }
       });
       
@@ -68,7 +76,9 @@ export default function MonthlyDetail({ selectedMonth, budgetId }: MonthlyDetail
           daysWithTransactions: 0
         });
       } else {
-        console.error('Failed to fetch monthly detail data');
+        console.error('Failed to fetch monthly detail data:', response.status, response.statusText);
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
         setDailyData([]);
         setInsights({
           bestDay: { day: 1, balance: 0 },
@@ -116,7 +126,9 @@ export default function MonthlyDetail({ selectedMonth, budgetId }: MonthlyDetail
     );
   }
 
-  const monthName = new Date(selectedMonth + '-01').toLocaleDateString('pt-BR', { 
+  // Fix timezone issue by parsing the date correctly
+  const [year, month] = selectedMonth.split('-');
+  const monthName = new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleDateString('pt-BR', { 
     month: 'long', 
     year: 'numeric' 
   });
