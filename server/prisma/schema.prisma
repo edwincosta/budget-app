@@ -24,52 +24,55 @@ model User {
 }
 
 model Budget {
-  id           String        @id @default(cuid())
-  name         String
-  description  String?
-  ownerId      String
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  accounts     Account[]
-  budgetItems  BudgetItem[]
-  shares       BudgetShare[]
-  owner        User          @relation("BudgetOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  categories   Category[]
-  transactions Transaction[]
-  defaultUsers User[]        @relation("DefaultBudget")
+  id              String          @id @default(cuid())
+  name            String
+  description     String?
+  ownerId         String
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  accounts        Account[]
+  budgetItems     BudgetItem[]
+  shares          BudgetShare[]
+  owner           User            @relation("BudgetOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  categories      Category[]
+  transactions    Transaction[]
+  defaultUsers    User[]          @relation("DefaultBudget")
+  importSessions  ImportSession[]
 
   @@map("budgets")
 }
 
 model Account {
-  id           String        @id @default(cuid())
-  name         String
-  type         AccountType
-  balance      Decimal       @default(0) @db.Decimal(12, 2)
-  description  String?
-  budgetId     String
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  inactive     Boolean       @default(false)
-  budget       Budget        @relation(fields: [budgetId], references: [id], onDelete: Cascade)
-  transactions Transaction[]
+  id              String          @id @default(cuid())
+  name            String
+  type            AccountType
+  balance         Decimal         @default(0) @db.Decimal(12, 2)
+  description     String?
+  budgetId        String
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  inactive        Boolean         @default(false)
+  budget          Budget          @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  transactions    Transaction[]
+  importSessions  ImportSession[]
 
   @@map("accounts")
 }
 
 model Category {
-  id           String        @id @default(cuid())
-  name         String
-  type         CategoryType
-  color        String        @default("#3B82F6")
-  icon         String?
-  budgetId     String
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  inactive     Boolean       @default(false)
-  budgetItems  BudgetItem[]
-  budget       Budget        @relation(fields: [budgetId], references: [id], onDelete: Cascade)
-  transactions Transaction[]
+  id               String            @id @default(cuid())
+  name             String
+  type             CategoryType
+  color            String            @default("#3B82F6")
+  icon             String?
+  budgetId         String
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  inactive         Boolean           @default(false)
+  budgetItems      BudgetItem[]
+  budget           Budget            @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  transactions     Transaction[]
+  tempTransactions TempTransaction[]
 
   @@unique([name, budgetId])
   @@map("categories")
@@ -159,4 +162,55 @@ enum ShareStatus {
   ACCEPTED
   REJECTED
   REVOKED
+}
+
+model ImportSession {
+  id                String                @id @default(cuid())
+  filename          String
+  fileType          ImportFileType
+  accountId         String
+  budgetId          String
+  status            ImportStatus          @default(PENDING)
+  totalTransactions Int                   @default(0)
+  processedAt       DateTime?
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  account           Account               @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  budget            Budget                @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  tempTransactions  TempTransaction[]
+
+  @@map("import_sessions")
+}
+
+model TempTransaction {
+  id              String        @id @default(cuid())
+  sessionId       String
+  description     String
+  amount          Decimal       @db.Decimal(12, 2)
+  type            TransactionType
+  date            DateTime
+  categoryId      String?
+  originalData    Json?         // Dados originais do arquivo para debug
+  isClassified    Boolean       @default(false)
+  isDuplicate     Boolean       @default(false)
+  duplicateReason String?
+  createdAt       DateTime      @default(now())
+  session         ImportSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  category        Category?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@map("temp_transactions")
+}
+
+enum ImportFileType {
+  CSV
+  PDF
+}
+
+enum ImportStatus {
+  PENDING       // Aguardando classificação
+  PROCESSING    // Sendo processado
+  CLASSIFIED    // Classificado pelo usuário
+  COMPLETED     // Importação finalizada
+  ERROR         // Erro no processamento
+  CANCELLED     // Cancelado pelo usuário
 }

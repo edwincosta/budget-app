@@ -19,7 +19,7 @@ api.interceptors.request.use((config) => {
     data: config.data,
     headers: config.headers
   });
-  
+
   const token = getCookie('auth_token') || localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -39,7 +39,7 @@ api.interceptors.response.use(
       data: error.response?.data,
       message: error.message
     });
-    
+
     if (error.response?.status === 401) {
       // Clear both cookies and localStorage for backwards compatibility
       deleteCookie('auth_token');
@@ -55,33 +55,33 @@ api.interceptors.response.use(
 export const authService = {
   async register(data: { name: string; email: string; password: string }): Promise<AuthResponse> {
     const response: AxiosResponse<AuthResponse> = await api.post('/auth/register', data);
-    
+
     if (response.data.token) {
       // Save to cookies with 30 days expiration for persistent login
       setCookie('auth_token', response.data.token, 30);
       setCookie('user_data', JSON.stringify(response.data.user), 30);
-      
+
       // Keep localStorage for backwards compatibility
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
     }
-    
+
     return response.data;
   },
 
   async login(data: { email: string; password: string }): Promise<AuthResponse> {
     const response: AxiosResponse<AuthResponse> = await api.post('/auth/login', data);
-    
+
     if (response.data.token) {
       // Save to cookies with 30 days expiration for persistent login
       setCookie('auth_token', response.data.token, 30);
       setCookie('user_data', JSON.stringify(response.data.user), 30);
-      
+
       // Keep localStorage for backwards compatibility
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
     }
-    
+
     return response.data;
   },
 
@@ -118,7 +118,7 @@ export const authService = {
   initializeAuth(): void {
     const cookieToken = getCookie('auth_token');
     const cookieUser = getCookie('user_data');
-    
+
     if (cookieToken && cookieUser) {
       // Sync to localStorage for backwards compatibility
       localStorage.setItem('token', cookieToken);
@@ -178,7 +178,7 @@ export const reportsService = {
   }> {
     let baseUrl = budgetId ? `/budgets/${budgetId}/reports` : '/reports';
     let url = baseUrl;
-    
+
     if (typeof params === 'string') {
       // Legacy support for period-only requests
       url += `?period=${params}`;
@@ -190,7 +190,7 @@ export const reportsService = {
         url += `?mode=period&period=${params.period}`;
       }
     }
-    
+
     const response = await api.get(url);
     return response.data.data;
   },
@@ -200,7 +200,7 @@ export const reportsService = {
     const response = await api.get(`${baseUrl}/export?period=${period}&format=${format}`, {
       responseType: 'blob'
     });
-    
+
     const url = window.URL.createObjectURL(new Blob([response.data]));
     const link = document.createElement('a');
     link.href = url;
@@ -329,6 +329,90 @@ export const sharingService = {
 
   async revokeShare(shareId: string): Promise<void> {
     await api.delete(`/sharing/${shareId}`);
+  },
+};
+
+// Import Service - Sistema de Importação de Extratos
+export const importService = {
+  /**
+   * Faz upload de arquivo para importação
+   */
+  async uploadFile(
+    file: File,
+    accountId: string,
+    budgetId?: string,
+    dateRange?: { startDate: string; endDate: string }
+  ): Promise<import('@/types').UploadResponse> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('accountId', accountId);
+
+    if (dateRange) {
+      formData.append('startDate', dateRange.startDate);
+      formData.append('endDate', dateRange.endDate);
+    }
+
+    const url = budgetId ? `/budgets/${budgetId}/import/upload` : '/import/upload';
+
+    const response: AxiosResponse<import('@/types').UploadResponse> = await api.post(url, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      }
+    });
+    return response.data;
+  },
+
+  /**
+   * Lista sessões de importação
+   */
+  async getSessions(budgetId?: string): Promise<import('@/types').ImportSession[]> {
+    const url = budgetId ? `/budgets/${budgetId}/import/sessions` : '/import/sessions';
+    const response: AxiosResponse<import('@/types').ImportSession[]> = await api.get(url);
+    return response.data;
+  },
+
+  /**
+   * Obtém detalhes de uma sessão de importação
+   */
+  async getSessionDetails(sessionId: string, budgetId?: string): Promise<import('@/types').ImportSessionDetails> {
+    const url = budgetId ? `/budgets/${budgetId}/import/sessions/${sessionId}` : `/import/sessions/${sessionId}`;
+    const response: AxiosResponse<import('@/types').ImportSessionDetails> = await api.get(url);
+    return response.data;
+  },
+
+  /**
+   * Classifica uma transação individual
+   */
+  async classifyTransaction(transactionId: string, categoryId: string, budgetId?: string): Promise<import('@/types').TempTransaction> {
+    const url = budgetId
+      ? `/budgets/${budgetId}/import/transactions/${transactionId}/classify`
+      : `/import/transactions/${transactionId}/classify`;
+
+    const response: AxiosResponse<import('@/types').TempTransaction> = await api.put(url, { categoryId });
+    return response.data;
+  },
+
+  /**
+   * Confirma importação das transações classificadas
+   */
+  async confirmImport(sessionId: string, importDuplicates = false, budgetId?: string): Promise<import('@/types').ConfirmImportResponse> {
+    const url = budgetId
+      ? `/budgets/${budgetId}/import/sessions/${sessionId}/confirm`
+      : `/import/sessions/${sessionId}/confirm`;
+
+    const response: AxiosResponse<import('@/types').ConfirmImportResponse> = await api.post(url, { importDuplicates });
+    return response.data;
+  },
+
+  /**
+   * Cancela uma sessão de importação
+   */
+  async cancelSession(sessionId: string, budgetId?: string): Promise<void> {
+    const url = budgetId
+      ? `/budgets/${budgetId}/import/sessions/${sessionId}`
+      : `/import/sessions/${sessionId}`;
+
+    await api.delete(url);
   },
 };
 

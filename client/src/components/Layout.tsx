@@ -1,6 +1,6 @@
 import { ReactNode, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { LogOut, Home, CreditCard, Tag, TrendingUp, BarChart3, Target, Menu, X, Users } from 'lucide-react'
+import { LogOut, Home, CreditCard, Tag, TrendingUp, BarChart3, Target, Menu, X, Users, Upload } from 'lucide-react'
 import { toast } from 'sonner'
 import { authService } from '@/services/api'
 import BudgetSelector from './BudgetSelector'
@@ -47,7 +47,7 @@ export default function Layout({ children }: LayoutProps) {
               </button>
               <h1 className="text-xl font-semibold text-gray-900 ml-2 lg:ml-0">Budget App</h1>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               <BudgetSelector />
               <span className="text-sm text-gray-700 hidden sm:block">Olá, {user?.name}</span>
@@ -66,7 +66,7 @@ export default function Layout({ children }: LayoutProps) {
       <div className="flex relative flex-1 min-h-0">
         {/* Mobile sidebar overlay */}
         {isSidebarOpen && (
-          <div 
+          <div
             className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
             onClick={closeSidebar}
           />
@@ -95,9 +95,8 @@ export default function Layout({ children }: LayoutProps) {
                 <Link
                   to="/"
                   onClick={closeSidebar}
-                  className={`flex items-center space-x-3 p-3 rounded-lg transition-colors ${
-                    isActive('/') ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
-                  }`}
+                  className={`flex items-center space-x-3 p-3 rounded-lg transition-colors ${isActive('/') ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
+                    }`}
                 >
                   <Home className="w-5 h-5" />
                   <span>Dashboard</span>
@@ -107,9 +106,8 @@ export default function Layout({ children }: LayoutProps) {
                 <Link
                   to="/accounts"
                   onClick={closeSidebar}
-                  className={`flex items-center space-x-3 p-3 rounded-lg transition-colors ${
-                    isActive('/accounts') ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
-                  }`}
+                  className={`flex items-center space-x-3 p-3 rounded-lg transition-colors ${isActive('/accounts') ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
+                    }`}
                 >
                   <CreditCard className="w-5 h-5" />
                   <span>Contas</span>
@@ -119,9 +117,8 @@ export default function Layout({ children }: LayoutProps) {
                 <Link
                   to="/categories"
                   onClick={closeSidebar}
-                  className={`flex items-center space-x-3 p-3 rounded-lg transition-colors ${
-                    isActive('/categories') ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
-                  }`}
+                  className={`flex items-center space-x-3 p-3 rounded-lg transition-colors ${isActive('/categories') ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
+                    }`}
                 >
                   <Tag className="w-5 h-5" />
                   <span>Categorias</span>
@@ -131,9 +128,8 @@ export default function Layout({ children }: LayoutProps) {
                 <Link
                   to="/transactions"
                   onClick={closeSidebar}
-                  className={`flex items-center space-x-3 p-3 rounded-lg transition-colors ${
-                    isActive('/transactions') ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
-                  }`}
+                  className={`flex items-center space-x-3 p-3 rounded-lg transition-colors ${isActive('/transactions') ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
+                    }`}
                 >
                   <TrendingUp className="w-5 h-5" />
                   <span>Transações</span>
@@ -143,9 +139,8 @@ export default function Layout({ children }: LayoutProps) {
                 <Link
                   to="/reports"
                   onClick={closeSidebar}
-                  className={`flex items-center space-x-3 p-3 rounded-lg transition-colors ${
-                    isActive('/reports') ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
-                  }`}
+                  className={`flex items-center space-x-3 p-3 rounded-lg transition-colors ${isActive('/reports') ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
+                    }`}
                 >
                   <BarChart3 className="w-5 h-5" />
                   <span>Relatórios</span>
@@ -155,9 +150,8 @@ export default function Layout({ children }: LayoutProps) {
                 <Link
                   to="/budgets"
                   onClick={closeSidebar}
-                  className={`flex items-center space-x-3 p-3 rounded-lg transition-colors ${
-                    isActive('/budgets') ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
-                  }`}
+                  className={`flex items-center space-x-3 p-3 rounded-lg transition-colors ${isActive('/budgets') ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
+                    }`}
                 >
                   <Target className="w-5 h-5" />
                   <span>Orçamentos</span>
@@ -167,12 +161,22 @@ export default function Layout({ children }: LayoutProps) {
                 <Link
                   to="/sharing"
                   onClick={closeSidebar}
-                  className={`flex items-center space-x-3 p-3 rounded-lg transition-colors ${
-                    isActive('/sharing') ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
-                  }`}
+                  className={`flex items-center space-x-3 p-3 rounded-lg transition-colors ${isActive('/sharing') ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
+                    }`}
                 >
                   <Users className="w-5 h-5" />
                   <span>Compartilhamento</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/import"
+                  onClick={closeSidebar}
+                  className={`flex items-center space-x-3 p-3 rounded-lg transition-colors ${isActive('/import') ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                >
+                  <Upload className="w-5 h-5" />
+                  <span>Importar Extratos</span>
                 </Link>
               </li>
             </ul>
@@ -191,66 +195,59 @@ export default function Layout({ children }: LayoutProps) {
           <div className="flex justify-around items-center w-full max-w-6xl mx-auto">
             <Link
               to="/"
-              className={`flex flex-col items-center p-2 rounded-lg transition-colors min-w-0 ${
-                isActive('/') ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-              }`}
+              className={`flex flex-col items-center p-2 rounded-lg transition-colors min-w-0 ${isActive('/') ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
             >
               <Home className="w-5 h-5 mb-1" />
               <span className="text-xs font-medium truncate">Dashboard</span>
             </Link>
             <Link
               to="/accounts"
-              className={`flex flex-col items-center p-2 rounded-lg transition-colors min-w-0 ${
-                isActive('/accounts') ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-              }`}
+              className={`flex flex-col items-center p-2 rounded-lg transition-colors min-w-0 ${isActive('/accounts') ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
             >
               <CreditCard className="w-5 h-5 mb-1" />
               <span className="text-xs font-medium truncate">Contas</span>
             </Link>
             <Link
               to="/categories"
-              className={`flex flex-col items-center p-2 rounded-lg transition-colors min-w-0 ${
-                isActive('/categories') ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-              }`}
+              className={`flex flex-col items-center p-2 rounded-lg transition-colors min-w-0 ${isActive('/categories') ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
             >
               <Tag className="w-5 h-5 mb-1" />
               <span className="text-xs font-medium truncate">Categorias</span>
             </Link>
             <Link
               to="/transactions"
-              className={`flex flex-col items-center p-2 rounded-lg transition-colors min-w-0 ${
-                isActive('/transactions') ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-              }`}
+              className={`flex flex-col items-center p-2 rounded-lg transition-colors min-w-0 ${isActive('/transactions') ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
             >
               <TrendingUp className="w-5 h-5 mb-1" />
               <span className="text-xs font-medium truncate">Transações</span>
             </Link>
             <Link
               to="/reports"
-              className={`flex flex-col items-center p-2 rounded-lg transition-colors min-w-0 ${
-                isActive('/reports') ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-              }`}
+              className={`flex flex-col items-center p-2 rounded-lg transition-colors min-w-0 ${isActive('/reports') ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
             >
               <BarChart3 className="w-5 h-5 mb-1" />
               <span className="text-xs font-medium truncate">Relatórios</span>
             </Link>
             <Link
               to="/budgets"
-              className={`flex flex-col items-center p-2 rounded-lg transition-colors min-w-0 ${
-                isActive('/budgets') ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-              }`}
+              className={`flex flex-col items-center p-2 rounded-lg transition-colors min-w-0 ${isActive('/budgets') ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
             >
               <Target className="w-5 h-5 mb-1" />
               <span className="text-xs font-medium truncate">Orçamentos</span>
             </Link>
             <Link
-              to="/sharing"
-              className={`flex flex-col items-center p-2 rounded-lg transition-colors min-w-0 ${
-                isActive('/sharing') ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-              }`}
+              to="/import"
+              className={`flex flex-col items-center p-2 rounded-lg transition-colors min-w-0 ${isActive('/import') ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
             >
-              <Users className="w-5 h-5 mb-1" />
-              <span className="text-xs font-medium truncate">Compartilhar</span>
+              <Upload className="w-5 h-5 mb-1" />
+              <span className="text-xs font-medium truncate">Importar</span>
             </Link>
           </div>
         </nav>

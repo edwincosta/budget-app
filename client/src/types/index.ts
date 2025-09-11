@@ -126,3 +126,90 @@ export interface ShareInviteRequest {
 export interface ShareResponse {
   action: 'accept' | 'reject';
 }
+
+// Tipos para Sistema de Importação
+export interface ImportSession {
+  id: string;
+  filename: string;
+  fileType: 'CSV' | 'PDF';
+  status: ImportStatus;
+  totalTransactions: number;
+  processedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  account: {
+    id: string;
+    name: string;
+    type: string;
+  };
+}
+
+export interface TempTransaction {
+  id: string;
+  sessionId: string;
+  description: string;
+  amount: number;
+  type: 'INCOME' | 'EXPENSE';
+  date: string;
+  categoryId?: string;
+  originalData?: any;
+  isClassified: boolean;
+  isDuplicate: boolean;
+  duplicateReason?: string;
+  createdAt: string;
+  category?: {
+    id: string;
+    name: string;
+    type: string;
+    color: string;
+  };
+}
+
+export interface ImportSessionDetails {
+  session: ImportSession;
+  transactions: TempTransaction[];
+  availableCategories: Category[];
+  summary: {
+    total: number;
+    classified: number;
+    duplicates: number;
+    pending: number;
+  };
+}
+
+export interface ParseResult {
+  transactions: any[];
+  errors: string[];
+  totalProcessed: number;
+}
+
+export interface UploadResponse {
+  sessionId: string;
+  totalTransactions: number;
+  duplicatesFound: number;
+  errors: string[];
+}
+
+export interface ClassifyRequest {
+  categoryId: string;
+}
+
+export interface ConfirmImportRequest {
+  importDuplicates?: boolean;
+}
+
+export interface ConfirmImportResponse {
+  message: string;
+  importedCount: number;
+  transactionIds: string[];
+}
+
+export type ImportStatus =
+  | 'PENDING'       // Aguardando classificação
+  | 'PROCESSING'    // Sendo processado
+  | 'CLASSIFIED'    // Classificado pelo usuário
+  | 'COMPLETED'     // Importação finalizada
+  | 'ERROR'         // Erro no processamento
+  | 'CANCELLED';    // Cancelado pelo usuário
+
+export type ImportFileType = 'CSV' | 'PDF';

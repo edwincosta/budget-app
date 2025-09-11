@@ -21,6 +21,7 @@ import categoriesRoutes from './routes/categories';
 import transactionsRoutes from './routes/transactions';
 import dashboardRoutes from './routes/dashboard';
 import reportsRoutes from './routes/reports';
+import importRoutes from './routes/import';
 
 // Middleware
 import { errorHandler } from './middleware/errorHandler';
@@ -60,7 +61,7 @@ console.log('✅ Complete middleware configured');
 // Health check endpoint
 app.get('/health', (req, res) => {
   console.log('📋 Health check requested');
-  res.status(200).json({ 
+  res.status(200).json({
     status: 'OK',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
@@ -79,7 +80,7 @@ app.get('/api/test', async (req, res) => {
     const accounts = await prisma.account.count();
     const categories = await prisma.category.count();
     const transactions = await prisma.transaction.count();
-    
+
     res.json({
       message: 'Complete budget architecture working with TS-NODE!',
       database: { users, budgets, shares, accounts, categories, transactions },
@@ -87,10 +88,10 @@ app.get('/api/test', async (req, res) => {
       runtime: 'ts-node',
       routes: [
         'GET /api/auth/* (authentication)',
-        'GET /api/budgets/* (budget management)', 
+        'GET /api/budgets/* (budget management)',
         'GET /api/sharing/* (budget sharing)',
         'GET /api/accounts (default budget)',
-        'GET /api/categories (default budget)', 
+        'GET /api/categories (default budget)',
         'GET /api/transactions (default budget)',
         'GET /api/dashboard/stats (default budget)',
         'GET /api/reports (default budget)'
@@ -98,7 +99,7 @@ app.get('/api/test', async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Database error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Database connection failed',
       message: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -118,6 +119,7 @@ app.use('/api/categories', categoriesRoutes);
 app.use('/api/transactions', transactionsRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reports', reportsRoutes);
+app.use('/api/import', importRoutes);
 
 console.log('✅ All API routes registered successfully');
 console.log('📋 Available API endpoints:');
@@ -129,6 +131,7 @@ console.log('   🏷️  Categories: /api/categories (default budget context)');
 console.log('   💰 Transactions: /api/transactions (default budget context)');
 console.log('   📈 Dashboard: /api/dashboard/* (default budget context)');
 console.log('   📄 Reports: /api/reports (default budget context)');
+console.log('   📥 Import: /api/import/* (file import system)');
 
 // Error handling
 app.use(notFound);

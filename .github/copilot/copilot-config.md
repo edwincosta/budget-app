@@ -2,17 +2,29 @@
 
 ## 🎯 Configuração Específica do Projeto
 
-### Para usar estes arquivos de contexto de forma eficaz:
+### 🚨 **PROTOCOLO OBRIGATÓRIO DE DESENVOLVIMENTO:**
 
-1. **Use copilot-context.md como fonte única**: Todas as regras de negócio, arquitetura e padrões estão lá
-2. **Referencie sempre o contexto principal**: Mencione "seguindo as regras do copilot-context.md"
-3. **Use exemplos deste arquivo**: Para snippets e templates específicos do VS Code
+1. **CONSULTA PRÉVIA**: Sempre leia `copilot-context.md` antes de qualquer alteração
+2. **RESPONSIVIDADE**: Implemente design responsivo usando padrões estabelecidos
+3. **COMPARTILHAMENTO**: Garanta compatibilidade com orçamentos compartilhados
+4. **SEGURANÇA**: Aplique validações de permissão (READ/WRITE) e isolamento por orçamento
+5. **ATUALIZAÇÃO DO CONTEXTO**: Sempre atualize `copilot-context.md` após mudanças
 
-### Comandos recomendados para o Copilot:
+### **Padrões Técnicos Obrigatórios:**
+- **Container Responsivo**: `max-w-7xl mx-auto px-4 sm:px-6 lg:px-8`
+- **Breakpoints Mobile-First**: mobile(<768px), tablet(768-1024px), desktop(>1024px)
+- **Rotas Duplas**: `/api/resource` + `/api/budgets/:budgetId/resource`
+- **Middleware de Segurança**: `auth`, `budgetAuth`, `requireWritePermission`
+- **Validação de Orçamento**: Todas as consultas devem filtrar por orçamento
+- **Props de Contexto**: Sempre passar `budgetId?: string` quando necessário
+
+### **Comandos Específicos para Copilot:**
 - `"Seguindo as regras do copilot-context.md, crie uma nova rota para..."`
 - `"Baseado na arquitetura budget-centric do sistema, implemente..."`
 - `"Considerando as regras de responsividade obrigatórias, ajuste..."`
-- `"Seguindo os padrões de validação estabelecidos, valide..."`
+- `"Respeitando o sistema de compartilhamento, desenvolva..."`
+- `"Aplicando middleware de segurança apropriado, crie..."`
+- `"Mantendo isolamento por orçamento, implemente..."`
 
 ## 🔧 Configurações do VS Code (.vscode/settings.json)
 

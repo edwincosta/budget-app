@@ -1,7 +1,11 @@
 import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
+import multer from 'multer';
+import * as path from 'path';
+import * as os from 'os';
 import { auth, AuthRequest } from '../middleware/auth';
 import { budgetAuth, requireWritePermission, requireOwnership, BudgetAuthRequest } from '../middleware/budgetAuth';
+import { ImportController } from '../controllers/importController';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -431,7 +435,7 @@ router.get('/analysis', auth, async (req: AuthRequest, res) => {
     const analysis = budgetItems.map(item => {
       const budgetAmount = parseFloat(item.amount.toString());
       let spentAmount = spentByCategory.get(item.categoryId) || 0;
-      
+
       // Ajustar para período mensal se necessário
       if (period !== 'current' && item.period === 'MONTHLY') {
         const monthsDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30));
@@ -439,7 +443,7 @@ router.get('/analysis', auth, async (req: AuthRequest, res) => {
       }
 
       const percentage = budgetAmount > 0 ? (spentAmount / budgetAmount) * 100 : 0;
-      
+
       let status: 'good' | 'warning' | 'exceeded';
       if (percentage <= 70) {
         status = 'good';
@@ -559,8 +563,8 @@ router.delete('/:budgetId', auth, budgetAuth, requireOwnership, async (req: Budg
     });
 
     if (usersWithDefaultBudget.length > 0) {
-      res.status(400).json({ 
-        message: 'Cannot delete budget that is set as default for users' 
+      res.status(400).json({
+        message: 'Cannot delete budget that is set as default for users'
       });
       return;
     }
@@ -772,7 +776,7 @@ router.get('/:budgetId/reports', auth, budgetAuth, async (req: BudgetAuthRequest
     // Definir período padrão se não especificado
     let startDate: Date;
     let endDate: Date = new Date();
-    
+
     if (mode === 'monthly' && month) {
       // Modo mensal: relatório de um mês específico
       const [year, monthNum] = (month as string).split('-');
@@ -780,8 +784,8 @@ router.get('/:budgetId/reports', auth, budgetAuth, async (req: BudgetAuthRequest
       endDate = new Date(parseInt(year), parseInt(monthNum), 0); // Último dia do mês
     } else {
       // Modo período: últimos X meses
-      const months = period === '3months' ? 3 : 
-                     period === '12months' ? 12 : 6; // default 6 meses
+      const months = period === '3months' ? 3 :
+        period === '12months' ? 12 : 6; // default 6 meses
       startDate = new Date();
       startDate.setMonth(startDate.getMonth() - months);
     }
@@ -812,7 +816,7 @@ router.get('/:budgetId/reports', auth, budgetAuth, async (req: BudgetAuthRequest
       const date = new Date(transaction.date);
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       const monthName = date.toLocaleDateString('pt-BR', { year: 'numeric', month: 'short' });
-      
+
       if (!monthsMap.has(monthKey)) {
         monthsMap.set(monthKey, {
           month: monthName,
@@ -821,10 +825,10 @@ router.get('/:budgetId/reports', auth, budgetAuth, async (req: BudgetAuthRequest
           balance: 0
         });
       }
-      
+
       const monthData = monthsMap.get(monthKey);
       const amount = parseFloat(transaction.amount.toString());
-      
+
       if (transaction.type === 'INCOME') {
         monthData.income += amount;
       } else {
@@ -848,7 +852,7 @@ router.get('/:budgetId/reports', auth, budgetAuth, async (req: BudgetAuthRequest
     transactions.forEach(transaction => {
       const amount = parseFloat(transaction.amount.toString());
       const categoryName = transaction.category.name;
-      
+
       if (transaction.type === 'EXPENSE') {
         const absAmount = Math.abs(amount);
         categoryExpenses.set(categoryName, (categoryExpenses.get(categoryName) || 0) + absAmount);
@@ -877,7 +881,7 @@ router.get('/:budgetId/reports', auth, budgetAuth, async (req: BudgetAuthRequest
       .map(([category, amount]) => ({
         category,
         amount,
-        transactions: transactions.filter(t => 
+        transactions: transactions.filter(t =>
           t.category.name === category && t.type === 'EXPENSE'
         ).length
       }))
@@ -936,9 +940,9 @@ router.get('/:budgetId/reports/forecast', auth, budgetAuth, async (req: BudgetAu
     const { period, type } = req.query;
 
     // Buscar transações dos últimos meses para calcular previsões
-    const months = period === '3months' ? 3 : 
-                   period === '12months' ? 12 : 6; // default 6 meses
-    
+    const months = period === '3months' ? 3 :
+      period === '12months' ? 12 : 6; // default 6 meses
+
     const startDate = new Date();
     startDate.setMonth(startDate.getMonth() - months);
 
@@ -960,11 +964,11 @@ router.get('/:budgetId/reports/forecast', auth, budgetAuth, async (req: BudgetAu
 
     // Calcular dados mensais históricos
     const monthlyData = new Map();
-    
+
     transactions.forEach(transaction => {
       const date = new Date(transaction.date);
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      
+
       if (!monthlyData.has(monthKey)) {
         monthlyData.set(monthKey, {
           month: date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }),
@@ -973,10 +977,10 @@ router.get('/:budgetId/reports/forecast', auth, budgetAuth, async (req: BudgetAu
           balance: 0
         });
       }
-      
+
       const monthData = monthlyData.get(monthKey);
       const amount = parseFloat(transaction.amount.toString());
-      
+
       if (transaction.type === 'INCOME') {
         monthData.income += amount;
       } else {
@@ -990,12 +994,12 @@ router.get('/:budgetId/reports/forecast', auth, budgetAuth, async (req: BudgetAu
     });
 
     const historicalData = Array.from(monthlyData.values()).sort((a, b) => a.month.localeCompare(b.month));
-    
+
     // Calcular médias e tendências
     let avgIncome = 0;
     let avgExpenses = 0;
     let avgBalance = 0;
-    
+
     if (historicalData.length > 0) {
       avgIncome = historicalData.reduce((sum, d) => sum + d.income, 0) / historicalData.length;
       avgExpenses = historicalData.reduce((sum, d) => sum + d.expenses, 0) / historicalData.length;
@@ -1005,35 +1009,35 @@ router.get('/:budgetId/reports/forecast', auth, budgetAuth, async (req: BudgetAu
     // Gerar previsões para os próximos 3 meses
     const forecast = [];
     const currentDate = new Date();
-    
+
     for (let i = 1; i <= 3; i++) {
       const forecastDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + i, 1);
       const monthName = forecastDate.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
-      
+
       // Adicionar pequena variação para previsão realística
       const variation = 1 + (Math.random() - 0.5) * 0.1; // +/- 5%
-      
+
       const forecastIncome = avgIncome * variation;
       const forecastExpenses = avgExpenses * variation;
       const forecastBalance = forecastIncome - forecastExpenses;
-      
+
       forecast.push({
         month: monthName,
         historical: null,
-        predicted: type === 'income' ? forecastIncome : 
-                  type === 'expenses' ? forecastExpenses : forecastBalance,
-        optimistic: type === 'income' ? forecastIncome * 1.1 : 
-                   type === 'expenses' ? forecastExpenses * 0.9 : forecastBalance * 1.1,
-        pessimistic: type === 'income' ? forecastIncome * 0.9 : 
-                    type === 'expenses' ? forecastExpenses * 1.1 : forecastBalance * 0.9
+        predicted: type === 'income' ? forecastIncome :
+          type === 'expenses' ? forecastExpenses : forecastBalance,
+        optimistic: type === 'income' ? forecastIncome * 1.1 :
+          type === 'expenses' ? forecastExpenses * 0.9 : forecastBalance * 1.1,
+        pessimistic: type === 'income' ? forecastIncome * 0.9 :
+          type === 'expenses' ? forecastExpenses * 1.1 : forecastBalance * 0.9
       });
     }
 
     // Adicionar dados históricos ao forecast
     const forecastData = historicalData.map(data => ({
       month: data.month,
-      historical: type === 'income' ? data.income : 
-                 type === 'expenses' ? data.expenses : data.balance,
+      historical: type === 'income' ? data.income :
+        type === 'expenses' ? data.expenses : data.balance,
       predicted: null,
       optimistic: null,
       pessimistic: null
@@ -1042,16 +1046,16 @@ router.get('/:budgetId/reports/forecast', auth, budgetAuth, async (req: BudgetAu
     // Calcular tendência
     let trend = 'stable';
     let growthRate = 0;
-    
+
     if (historicalData.length >= 2) {
       const recent = historicalData[historicalData.length - 1];
       const previous = historicalData[historicalData.length - 2];
-      
-      const recentValue = type === 'income' ? recent.income : 
-                         type === 'expenses' ? recent.expenses : recent.balance;
-      const previousValue = type === 'income' ? previous.income : 
-                           type === 'expenses' ? previous.expenses : previous.balance;
-      
+
+      const recentValue = type === 'income' ? recent.income :
+        type === 'expenses' ? recent.expenses : recent.balance;
+      const previousValue = type === 'income' ? previous.income :
+        type === 'expenses' ? previous.expenses : previous.balance;
+
       if (previousValue !== 0) {
         growthRate = ((recentValue - previousValue) / previousValue) * 100;
         trend = growthRate > 5 ? 'up' : growthRate < -5 ? 'down' : 'stable';
@@ -1063,9 +1067,9 @@ router.get('/:budgetId/reports/forecast', auth, budgetAuth, async (req: BudgetAu
       growthRate,
       trend,
       confidence: Math.min(85, 50 + (historicalData.length * 5)), // Mais dados = maior confiança
-      recommendation: trend === 'up' ? 'Tendência positiva mantida!' : 
-                     trend === 'down' ? 'Atenção: tendência de queda detectada.' : 
-                     'Comportamento estável nos últimos meses.'
+      recommendation: trend === 'up' ? 'Tendência positiva mantida!' :
+        trend === 'down' ? 'Atenção: tendência de queda detectada.' :
+          'Comportamento estável nos últimos meses.'
     };
 
     res.json({
@@ -1155,5 +1159,64 @@ router.get('/:budgetId/analysis', auth, budgetAuth, async (req: BudgetAuthReques
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+
+// Configuração do multer para upload de arquivos (importação)
+const upload = multer({
+  dest: path.join(os.tmpdir(), 'budget-imports'),
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB max
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['text/csv', 'application/pdf', 'text/plain'];
+    const allowedExtensions = ['.csv', '.pdf', '.txt'];
+    const fileExtension = path.extname(file.originalname).toLowerCase();
+
+    if (allowedTypes.includes(file.mimetype) || allowedExtensions.includes(fileExtension)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Tipo de arquivo não suportado. Envie apenas CSV ou PDF.'));
+    }
+  }
+});
+
+// Rotas de importação para orçamentos específicos
+/**
+ * POST /api/budgets/:budgetId/import/upload
+ * Upload para orçamento específico
+ */
+router.post('/:budgetId/import/upload', budgetAuth, requireWritePermission, upload.single('file'), (req, res, next) => {
+  req.body.budgetId = req.params.budgetId;
+  next();
+}, ImportController.uploadFile);
+
+/**
+ * GET /api/budgets/:budgetId/import/sessions
+ * Lista sessões de importação de orçamento específico
+ */
+router.get('/:budgetId/import/sessions', budgetAuth, ImportController.getSessions);
+
+/**
+ * GET /api/budgets/:budgetId/import/sessions/:sessionId
+ * Obtém transações de uma sessão para classificação
+ */
+router.get('/:budgetId/import/sessions/:sessionId', budgetAuth, ImportController.getSessionTransactions);
+
+/**
+ * PUT /api/budgets/:budgetId/import/transactions/:transactionId/classify
+ * Classifica uma transação individual
+ */
+router.put('/:budgetId/import/transactions/:transactionId/classify', budgetAuth, requireWritePermission, ImportController.classifyTransaction);
+
+/**
+ * POST /api/budgets/:budgetId/import/sessions/:sessionId/confirm
+ * Confirma importação das transações classificadas
+ */
+router.post('/:budgetId/import/sessions/:sessionId/confirm', budgetAuth, requireWritePermission, ImportController.confirmImport);
+
+/**
+ * DELETE /api/budgets/:budgetId/import/sessions/:sessionId
+ * Cancela sessão de importação
+ */
+router.delete('/:budgetId/import/sessions/:sessionId', budgetAuth, requireWritePermission, ImportController.cancelSession);
 
 export default router;

@@ -9,6 +9,7 @@ import Transactions from '@/pages/Transactions'
 import Reports from '@/pages/Reports'
 import Budgets from '@/pages/Budgets'
 import Sharing from '@/pages/Sharing'
+import ImportPage from '@/pages/ImportPage'
 import Layout from '@/components/Layout'
 import { BudgetProvider } from '@/contexts/BudgetContext'
 
@@ -39,6 +40,7 @@ function App() {
                     <Route path="/reports" element={<Reports />} />
                     <Route path="/budgets" element={<Budgets />} />
                     <Route path="/sharing" element={<Sharing />} />
+                    <Route path="/import" element={<ImportPage />} />
                   </Routes>
                 </Layout>
               </BudgetProvider>
