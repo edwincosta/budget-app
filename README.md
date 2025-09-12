@@ -1,6 +1,8 @@
 # Budget App 💰
 
-Aplicativo web completo de gerenciamento de orçamento pessoal com arquitetura cliente-servidor.
+Aplicativo web completo de gerenciamento de orçamento pessoal com **arquitetura budget-centric** e cliente-servidor.
+
+> **🏗️ Arquitetura Budget-Centric**: Todos os dados pertencem a um orçamento específico, garantindo isolamento total e suporte nativo a compartilhamento com permissões granulares.
 
 ## 🚀 Tecnologias
 
@@ -11,6 +13,7 @@ Aplicativo web completo de gerenciamento de orçamento pessoal com arquitetura c
 - React Query (state management)
 - React Hook Form (forms)
 - Recharts (gráficos)
+- React Context API (BudgetContext)
 
 ### Backend
 - Node.js + Express + TypeScript
@@ -18,6 +21,8 @@ Aplicativo web completo de gerenciamento de orçamento pessoal com arquitetura c
 - JWT Authentication
 - bcrypt (hash de senhas)
 - Helmet + CORS (segurança)
+- Multer (upload de arquivos)
+- File Processing: csv-parser, pdf-parse, iconv-lite
 
 ### DevOps
 - Docker & Docker Compose
@@ -74,19 +79,38 @@ docker-compose -f docker-compose.prod.yml up --build
 
 ## 📱 Funcionalidades
 
+### 🔐 Sistema de Autenticação e Orçamentos
 - ✅ Autenticação segura (JWT)
+- ✅ Múltiplos orçamentos por usuário
+- ✅ **Sistema de Compartilhamento Avançado** 🤝
+  - Convites para outros usuários com permissões granulares
+  - **OWNER**: Acesso total + gestão de compartilhamentos
+  - **WRITE**: Criar/editar/excluir dados (exceto compartilhamento)
+  - **READ**: Apenas visualização
+  - Interface responsiva para gestão de acesso
+
+### 💰 Gestão Financeira
 - ✅ Dashboard responsivo com análises financeiras
 - ✅ Gestão completa de receitas e despesas
 - ✅ Categorização inteligente de transações
-- ✅ Sistema de contas múltiplas
-- ✅ Orçamentos mensais/trimestrais/anuais
-- ✅ **Sistema de Compartilhamento** 🤝
-  - Convites para outros usuários
-  - Permissões granulares (READ/WRITE)
-  - Gestão de acesso e revogação
-  - Interface responsiva para mobile
+- ✅ Sistema de contas múltiplas (Corrente, Poupança, Cartão, Investimentos)
+- ✅ Orçamentos mensais/trimestrais/anuais (planejado vs realizado)
+
+### 📄 **Importação de Extratos Bancários** 🆕
+- ✅ **Suporte a múltiplos formatos**: CSV, PDF, Excel
+- ✅ **Bancos brasileiros suportados**: 
+  - Nubank, BTG Pactual, Bradesco, Itaú
+  - C6 Bank, Clear, Inter, XP Investimentos
+- ✅ **Detecção automática de duplicatas**
+- ✅ **Classificação manual** de transações importadas
+- ✅ **Filtro por período de datas** (opcional)
+- ✅ **Detecção automática de encoding** (UTF-8, ISO-8859-1)
+- ✅ **Gestão de sessões de importação** com status
+
+### 📊 Análises e Relatórios
 - ✅ Gráficos e relatórios avançados
 - ✅ Exportação de dados (CSV)
+- ✅ Análise orçado vs realizado
 - ✅ Design responsivo e moderno
 - ✅ PWA ready
 

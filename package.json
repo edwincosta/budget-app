@@ -16,7 +16,16 @@
     "prisma:migrate": "cd server && npx prisma migrate dev",
     "prisma:studio": "cd server && npx prisma studio"
   },
-  "keywords": ["budget", "finance", "react", "nodejs", "typescript"],
+  "keywords": [
+    "budget",
+    "finance",
+    "react",
+    "nodejs",
+    "typescript"
+  ],
   "author": "Your Name",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.12.0"
+  }
 }

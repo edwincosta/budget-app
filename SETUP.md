@@ -23,6 +23,9 @@ copy .env.example .env
 
 # Edite o arquivo .env com suas configurações
 # DATABASE_URL, JWT_SECRET, etc.
+# Variáveis específicas para importação de extratos:
+# UPLOAD_MAX_SIZE=10mb (tamanho máximo de arquivo)
+# TEMP_DIR=./temp (diretório temporário para processamento)
 ```
 
 ### 3. Opção A: Executar com Docker (Recomendado)
@@ -67,20 +70,29 @@ npm run dev
 ## 📱 Funcionalidades Disponíveis
 
 ### ✅ Implementado
-- Autenticação completa (login/registro)
-- Dashboard responsivo
-- Layout com navegação
-- Estrutura de banco de dados
-- APIs seguras com JWT
-- Docker containerizado
+- **Autenticação completa** (login/registro com JWT)
+- **Dashboard responsivo** com métricas financeiras
+- **Sistema de orçamentos múltiplos** com arquitetura budget-centric
+- **Gestão de contas** (Corrente, Poupança, Cartão, Investimentos, Dinheiro)
+- **Categorização** de receitas e despesas
+- **Transações financeiras** com validações
+- **Sistema de compartilhamento** com permissões (READ/WRITE/OWNER)
+- **🆕 Importação de extratos bancários**:
+  - Suporte a CSV, PDF, Excel
+  - Bancos: Nubank, BTG, Bradesco, Itaú, C6, Clear, Inter, XP
+  - Detecção de duplicatas
+  - Classificação manual de transações
+  - Filtro por período de datas
+- **Layout responsivo** com navegação
+- **APIs seguras** com middleware de autenticação
+- **Docker containerizado**
 
 ### 🔄 Próximos passos
-- CRUD de contas
-- CRUD de categorias
-- CRUD de transações
-- Gráficos e relatórios
+- Gráficos e relatórios avançados
+- Análise orçado vs realizado
 - Exportação de dados
 - Testes automatizados
+- PWA (Progressive Web App)
 
 ## 🚢 Deploy
 
@@ -116,6 +128,11 @@ npm run docker:down    # Parar containers
 npm run prisma:generate  # Gerar client
 npm run prisma:migrate   # Executar migrações
 npm run prisma:studio    # Interface visual
+npm run prisma:seed      # Popular banco com dados iniciais
+
+# Importação de extratos
+npm run test:import      # Testar importação de arquivos
+npm run test:parsers     # Testar parsers de bancos específicos
 ```
 
 ## 🆘 Solução de Problemas
@@ -132,6 +149,20 @@ npm install
 # Reset do banco
 cd server
 npx prisma migrate reset
+npx prisma db seed  # Recriar dados iniciais
+```
+
+### Erro na importação de extratos
+```bash
+# Verificar permissões de escrita no diretório temp
+mkdir temp
+chmod 755 temp
+
+# Testar parsers individualmente
+npm run test:parsers
+
+# Verificar logs de importação
+docker-compose logs server | grep "import"
 ```
 
 ### Erro no Docker
