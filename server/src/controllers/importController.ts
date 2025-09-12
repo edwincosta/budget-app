@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
+import { BudgetAuthRequest } from '../middleware/budgetAuth';
 import { PrismaClient } from '@prisma/client';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -124,7 +125,6 @@ export class ImportController {
                     parseResult = await ExcelParser.parseFile(req.file.path, parseOptions);
                 } else {
                     // CSV - tenta parser específico primeiro, depois avançado, depois básico
-                    let parseResult;
                     let usedParser = 'unknown';
                     let bankParserSuccess = false;
 
@@ -135,7 +135,8 @@ export class ImportController {
                             parseResult = await bankParser.parseFile(req.file.path, parseOptions);
                             usedParser = bankParser.bankName;
                             bankParserSuccess = true;
-                            console.log(`✅ ${bankParser.bankName} parser processou ${parseResult.transactions.length} transações`);
+                            console.log(`✅ ${bankParser.bankName} parser processou ${parseResult?.transactions?.length || 0} transações`);
+                            console.log('🔍 Debug bankParser result:', parseResult ? 'existe' : 'undefined');
                         } catch (bankError) {
                             console.log(`⚠️ ${bankParser.bankName} parser falhou:`, bankError.message);
                         }
@@ -146,18 +147,50 @@ export class ImportController {
                         try {
                             parseResult = await AdvancedCSVParser.parseFile(req.file.path, parseOptions);
                             usedParser = 'AdvancedCSV';
-                            console.log(`✅ Advanced CSV parser processou ${parseResult.transactions.length} transações`);
+                            console.log(`✅ Advanced CSV parser processou ${parseResult?.transactions?.length || 0} transações`);
+                            console.log('🔍 Debug parseResult:', parseResult ? 'existe' : 'undefined');
+                            console.log('🔍 Debug transactions:', parseResult?.transactions ? 'existe' : 'undefined');
+
+                            // Verificação adicional para debug
+                            if (!parseResult) {
+                                console.error('🚨 ERRO: AdvancedCSVParser retornou undefined!');
+                                throw new Error('AdvancedCSVParser retornou undefined');
+                            }
+                            if (!parseResult.transactions) {
+                                console.error('🚨 ERRO: AdvancedCSVParser retornou sem transactions!', parseResult);
+                                throw new Error('AdvancedCSVParser retornou sem transactions');
+                            }
                         } catch (advancedError) {
                             console.log('⚠️ Advanced parser falhou:', advancedError.message);
 
                             // 3. Última tentativa com parser básico
                             parseResult = await CSVParser.parseFile(req.file.path, parseOptions);
                             usedParser = 'BasicCSV';
-                            console.log(`✅ Basic CSV parser processou ${parseResult.transactions.length} transações`);
+                            console.log(`✅ Basic CSV parser processou ${parseResult?.transactions?.length || 0} transações`);
+                            console.log('🔍 Debug basicParser result:', parseResult ? 'existe' : 'undefined');
                         }
                     }
 
                     console.log(`📊 Parser usado: ${usedParser}`);
+                }
+
+                console.log('🔍 Final parseResult:', parseResult ? 'existe' : 'undefined');
+                console.log('🔍 Final transactions:', parseResult?.transactions ? 'existe' : 'undefined');
+
+                if (!parseResult || !parseResult.transactions) {
+                    await prisma.importSession.update({
+                        where: { id: session.id },
+                        data: {
+                            status: 'ERROR',
+                            totalTransactions: 0
+                        }
+                    });
+
+                    res.status(500).json({
+                        message: 'Erro interno: resultado do parser é inválido',
+                        errors: ['Parser retornou resultado inválido']
+                    });
+                    return;
                 }
 
                 if (parseResult.transactions.length === 0) {
@@ -253,7 +286,8 @@ export class ImportController {
         try {
             const { sessionId } = req.params;
 
-            // Busca sessão e valida permissão
+            // Busca sessão e valida permissão (READ ou superior)
+            // Usuarios READ podem ver sessões, mas não classificar
             const session = await prisma.importSession.findFirst({
                 where: {
                     id: sessionId,
@@ -264,8 +298,8 @@ export class ImportController {
                                 shares: {
                                     some: {
                                         sharedWithId: req.user!.id,
-                                        status: 'ACCEPTED',
-                                        permission: 'WRITE'
+                                        status: 'ACCEPTED'
+                                        // Removido filtro de permission: 'WRITE' para permitir usuários READ
                                     }
                                 }
                             }
@@ -331,7 +365,10 @@ export class ImportController {
                     account: session.account,
                     processedAt: session.processedAt
                 },
-                transactions: session.tempTransactions,
+                transactions: session.tempTransactions.map(t => ({
+                    ...t,
+                    amount: parseFloat(t.amount.toString())
+                })),
                 availableCategories: categories,
                 summary: {
                     total: session.tempTransactions.length,
@@ -430,7 +467,10 @@ export class ImportController {
                 }
             });
 
-            res.json(updated);
+            res.json({
+                ...updated,
+                amount: parseFloat(updated.amount.toString())
+            });
 
         } catch (error) {
             console.error('Error in classifyTransaction:', error);
@@ -530,6 +570,44 @@ export class ImportController {
         try {
             const { sessionId } = req.params;
 
+            // Busca sessão e valida permissão
+            const session = await prisma.importSession.findFirst({
+                where: {
+                    id: sessionId,
+                    budget: {
+                        OR: [
+                            { ownerId: req.user!.id },
+                            {
+                                shares: {
+                                    some: {
+                                        sharedWithId: req.user!.id,
+                                        status: 'ACCEPTED',
+                                        permission: 'WRITE'
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            });
+
+            if (!session) {
+                res.status(404).json({ message: 'Sessão não encontrada ou sem permissão' });
+                return;
+            }
+
+            // Verifica se a sessão pode ser cancelada
+            if (session.status === 'COMPLETED') {
+                res.status(400).json({ message: 'Sessão já foi finalizada e não pode ser cancelada' });
+                return;
+            }
+
+            if (session.status === 'CANCELLED') {
+                res.status(400).json({ message: 'Sessão já foi cancelada' });
+                return;
+            }
+
+            // Atualiza status para CANCELLED
             await prisma.importSession.update({
                 where: { id: sessionId },
                 data: { status: 'CANCELLED' }
@@ -548,8 +626,20 @@ export class ImportController {
      */
     static async getSessions(req: AuthRequest, res: Response): Promise<void> {
         try {
-            const sessions = await prisma.importSession.findMany({
-                where: {
+            // Verificar se é uma requisição para orçamento específico (via BudgetAuthRequest)
+            const budgetAuthReq = req as BudgetAuthRequest;
+            const specificBudgetId = budgetAuthReq.budget?.id;
+
+            let whereClause;
+
+            if (specificBudgetId) {
+                // Caso de orçamento específico (rota /api/budgets/:budgetId/import/sessions)
+                whereClause = {
+                    budgetId: specificBudgetId
+                };
+            } else {
+                // Caso de orçamento próprio (rota /api/import/sessions)
+                whereClause = {
                     budget: {
                         OR: [
                             { ownerId: req.user!.id },
@@ -563,7 +653,11 @@ export class ImportController {
                             }
                         ]
                     }
-                },
+                };
+            }
+
+            const sessions = await prisma.importSession.findMany({
+                where: whereClause,
                 include: {
                     account: {
                         select: {

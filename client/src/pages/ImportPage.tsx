@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
@@ -12,7 +12,8 @@ import {
     Calendar,
     DollarSign,
     Tag,
-    Users
+    Users,
+    Trash2
 } from 'lucide-react';
 import { useBudget } from '@/contexts/BudgetContext';
 import { accountService, importService } from '@/services/api';
@@ -22,8 +23,22 @@ interface ImportPageProps { }
 
 export const ImportPage: React.FC<ImportPageProps> = () => {
     const { activeBudget, isOwner } = useBudget();
+    // Seguindo o padrão do copilot-context.md:
+    // - activeBudget = null → orçamento próprio (usar APIs /api/resource)
+    // - activeBudget = objeto → orçamento compartilhado (usar APIs /api/budgets/:id/resource)
     const budgetId = activeBudget?.budgetId;
     const canWrite = isOwner || activeBudget?.permission === 'WRITE';
+
+    // Debug logs - seguindo padrões do sistema
+    console.log('🔍 ImportPage Debug:', {
+        activeBudget,
+        isOwner,
+        budgetId,
+        canWrite,
+        permission: activeBudget?.permission,
+        budgetName: activeBudget?.budget?.name,
+        pattern: activeBudget ? 'SHARED_BUDGET' : 'OWN_BUDGET'
+    });
 
     const [currentStep, setCurrentStep] = useState<'upload' | 'classify' | 'confirm'>('upload');
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -40,17 +55,74 @@ export const ImportPage: React.FC<ImportPageProps> = () => {
     });
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Buscar contas disponíveis
-    const { data: accounts, isLoading: loadingAccounts } = useQuery({
+    // Buscar contas disponíveis - PADRÃO COPILOT-CONTEXT.MD
+    const { data: accounts, isLoading: loadingAccounts, error: accountsError } = useQuery({
         queryKey: ['accounts', budgetId],
-        queryFn: () => accountService.getAccounts(budgetId),
+        queryFn: async () => {
+            console.log('🔍 Fetching accounts - Pattern:', activeBudget ? 'SHARED_BUDGET' : 'OWN_BUDGET', 'budgetId:', budgetId);
+            try {
+                // Padrão oficial do copilot-context.md:
+                // activeBudget = null → GET /api/accounts (orçamento próprio)
+                // activeBudget = obj → GET /api/budgets/:budgetId/accounts (compartilhado)
+                const result = await accountService.getAccounts(budgetId);
+                console.log('✅ Accounts fetched successfully:', result);
+                return result;
+            } catch (error) {
+                console.error('❌ Error fetching accounts:', error);
+                throw error;
+            }
+        },
+        enabled: true,
+        retry: false,
+        onError: (error) => {
+            console.error('❌ Accounts query error:', error);
+        }
     });
 
-    // Buscar sessões de importação
-    const { data: sessions, refetch: refetchSessions } = useQuery({
+    // Buscar sessões de importação - PADRÃO COPILOT-CONTEXT.MD
+    const { data: sessions, refetch: refetchSessions, error: sessionsError } = useQuery({
         queryKey: ['import-sessions', budgetId],
-        queryFn: () => importService.getSessions(budgetId),
-    });
+        queryFn: async () => {
+            console.log('🔍 Fetching sessions - Pattern:', activeBudget ? 'SHARED_BUDGET' : 'OWN_BUDGET', 'budgetId:', budgetId);
+            try {
+                // Padrão oficial do copilot-context.md:
+                // activeBudget = null → GET /api/import/sessions (orçamento próprio)
+                // activeBudget = obj → GET /api/budgets/:budgetId/import/sessions (compartilhado)
+                const result = await importService.getSessions(budgetId);
+                console.log('✅ Sessions fetched successfully:', result);
+                return result;
+            } catch (error) {
+                console.error('❌ Error fetching sessions:', error);
+                throw error;
+            }
+        },
+        enabled: true,
+        retry: false,
+        onError: (error) => {
+            console.error('❌ Sessions query error:', error);
+        }
+    });    // Monitor de erros em tempo real
+    useEffect(() => {
+        if (accountsError) {
+            console.error('🚨 Accounts Error Details:', {
+                error: accountsError,
+                message: (accountsError as any).message,
+                response: (accountsError as any).response?.data,
+                status: (accountsError as any).response?.status
+            });
+        }
+    }, [accountsError]);
+
+    useEffect(() => {
+        if (sessionsError) {
+            console.error('🚨 Sessions Error Details:', {
+                error: sessionsError,
+                message: (sessionsError as any).message,
+                response: (sessionsError as any).response?.data,
+                status: (sessionsError as any).response?.status
+            });
+        }
+    }, [sessionsError]);
 
     // Upload de arquivo
     const uploadMutation = useMutation({
@@ -74,6 +146,18 @@ export const ImportPage: React.FC<ImportPageProps> = () => {
         },
         onError: (error: any) => {
             toast.error(error.response?.data?.message || 'Erro ao processar arquivo');
+        },
+    });
+
+    // Cancelar/excluir sessão
+    const cancelSessionMutation = useMutation({
+        mutationFn: (sessionId: string) => importService.cancelSession(sessionId, budgetId),
+        onSuccess: () => {
+            toast.success('Sessão de importação cancelada com sucesso');
+            refetchSessions();
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || 'Erro ao cancelar sessão');
         },
     });
 
@@ -109,6 +193,12 @@ export const ImportPage: React.FC<ImportPageProps> = () => {
         });
     };
 
+    const handleCancelSession = (sessionId: string, sessionFilename: string) => {
+        if (window.confirm(`Tem certeza que deseja excluir a importação "${sessionFilename}"? Esta ação não pode ser desfeita.`)) {
+            cancelSessionMutation.mutate(sessionId);
+        }
+    };
+
     const getFileIcon = (fileName: string) => {
         const extension = fileName.split('.').pop()?.toLowerCase();
         if (extension === 'pdf') {
@@ -127,6 +217,8 @@ export const ImportPage: React.FC<ImportPageProps> = () => {
                 return 'text-blue-600 bg-blue-100';
             case 'PENDING':
                 return 'text-yellow-600 bg-yellow-100';
+            case 'CANCELLED':
+                return 'text-gray-600 bg-gray-100';
             default:
                 return 'text-gray-600 bg-gray-100';
         }
@@ -140,6 +232,8 @@ export const ImportPage: React.FC<ImportPageProps> = () => {
                 return <XCircle className="h-4 w-4" />;
             case 'PENDING':
                 return <AlertTriangle className="h-4 w-4" />;
+            case 'CANCELLED':
+                return <XCircle className="h-4 w-4" />;
             default:
                 return <Upload className="h-4 w-4" />;
         }
@@ -169,6 +263,24 @@ export const ImportPage: React.FC<ImportPageProps> = () => {
                                     Orçamento compartilhado por {activeBudget.budget?.owner?.name} •
                                     Permissão: {activeBudget.permission === 'READ' ? 'Visualização' : 'Edição'}
                                     {!canWrite && ' (Não é possível importar arquivos)'}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Aviso quando não há orçamento ativo (apenas para usuários não-proprietários) */}
+                {!activeBudget && !isOwner && (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                        <div className="flex items-center">
+                            <AlertTriangle className="h-5 w-5 mr-3 text-yellow-600" />
+                            <div>
+                                <h3 className="text-sm font-medium text-yellow-800">
+                                    Nenhum orçamento ativo
+                                </h3>
+                                <p className="text-sm text-yellow-600">
+                                    Você precisa ter um orçamento ativo para importar extratos.
+                                    Acesse a página de Orçamentos para criar ou selecionar um.
                                 </p>
                             </div>
                         </div>
@@ -404,17 +516,33 @@ export const ImportPage: React.FC<ImportPageProps> = () => {
                                                 <span>{session.status}</span>
                                             </span>
 
-                                            {session.status === 'PENDING' && (
-                                                <button
-                                                    onClick={() => {
-                                                        setCurrentSessionId(session.id);
-                                                        setCurrentStep('classify');
-                                                    }}
-                                                    className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-                                                >
-                                                    Continuar Classificação
-                                                </button>
-                                            )}
+                                            {/* Botões de ação */}
+                                            <div className="flex items-center space-x-2">
+                                                {session.status === 'PENDING' && (
+                                                    <button
+                                                        onClick={() => {
+                                                            setCurrentSessionId(session.id);
+                                                            setCurrentStep('classify');
+                                                        }}
+                                                        className="text-blue-600 hover:text-blue-700 text-sm font-medium px-3 py-1 rounded-md border border-blue-600 hover:bg-blue-50"
+                                                        title="Continuar classificação das transações"
+                                                    >
+                                                        Continuar
+                                                    </button>
+                                                )}
+
+                                                {/* Botão de exclusão para sessões pendentes ou com erro */}
+                                                {(session.status === 'PENDING' || session.status === 'ERROR') && canWrite && (
+                                                    <button
+                                                        onClick={() => handleCancelSession(session.id, session.filename)}
+                                                        disabled={cancelSessionMutation.isPending}
+                                                        className="text-red-600 hover:text-red-700 p-2 rounded-md hover:bg-red-50 transition-colors disabled:opacity-50"
+                                                        title="Excluir esta importação"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

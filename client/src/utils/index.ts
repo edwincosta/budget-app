@@ -36,13 +36,18 @@ export function formatDateTime(date: string | Date): string {
 export function setCookie(name: string, value: string, days: number): void {
   const expires = new Date()
   expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000))
-  document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/;secure;samesite=strict`
+
+  // Don't use secure flag in development (localhost)
+  const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  const secureFlag = isLocalhost ? '' : ';secure'
+
+  document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=${secureFlag};samesite=lax`
 }
 
 export function getCookie(name: string): string | null {
   const nameEQ = name + "="
   const ca = document.cookie.split(';')
-  
+
   for (let i = 0; i < ca.length; i++) {
     let c = ca[i]
     while (c.charAt(0) === ' ') c = c.substring(1, c.length)

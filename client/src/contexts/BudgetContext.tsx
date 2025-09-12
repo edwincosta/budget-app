@@ -33,7 +33,7 @@ export const BudgetProvider: React.FC<BudgetProviderProps> = ({ children }) => {
 
   const setActiveBudget = (budget: UserShare | null) => {
     setActiveBudgetState(budget);
-    
+
     // Salvar no cookie para persistir a seleção
     if (budget) {
       setCookie('active_budget_id', budget.id, 30);
@@ -46,12 +46,12 @@ export const BudgetProvider: React.FC<BudgetProviderProps> = ({ children }) => {
     try {
       setLoading(true);
       const activeShares = await sharingService.getActiveShares();
-      
+
       // Combinar orçamentos compartilhados comigo
       const allBudgets = [...activeShares.sharedWithMe];
-      
+
       setAvailableBudgets(allBudgets);
-      
+
       // Se não há orçamento ativo definido, tentar restaurar do cookie
       if (!activeBudget) {
         const savedBudgetId = getCookie('active_budget_id');
@@ -62,7 +62,7 @@ export const BudgetProvider: React.FC<BudgetProviderProps> = ({ children }) => {
           }
         }
       }
-      
+
     } catch (error) {
       console.error('Erro ao carregar orçamentos disponíveis:', error);
     } finally {
@@ -75,7 +75,9 @@ export const BudgetProvider: React.FC<BudgetProviderProps> = ({ children }) => {
   }, []);
 
   // Verificar se o usuário é proprietário do orçamento ativo
-  const isOwner = activeBudget ? false : true; // Se não há orçamento ativo, assume que é o proprietário
+  // Se há um orçamento ativo (compartilhado), o usuário não é proprietário
+  // Se não há orçamento ativo, está usando seu próprio orçamento (é proprietário)
+  const isOwner = !activeBudget;
 
   const value: BudgetContextType = {
     availableBudgets,

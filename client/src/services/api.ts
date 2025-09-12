@@ -30,24 +30,80 @@ api.interceptors.request.use((config) => {
 // Response interceptor to handle auth errors
 api.interceptors.response.use(
   (response) => {
-    console.log('API Response:', response.status, response.data);
+    console.log('✅ API Response:', response.status, response.data);
     return response;
   },
   (error) => {
-    console.log('API Error:', {
+    console.log('🚨 API Error Details:', {
       status: error.response?.status,
+      statusText: error.response?.statusText,
       data: error.response?.data,
-      message: error.message
+      message: error.message,
+      url: error.config?.url,
+      method: error.config?.method,
+      headers: error.config?.headers
     });
 
     if (error.response?.status === 401) {
-      // Clear both cookies and localStorage for backwards compatibility
-      deleteCookie('auth_token');
-      deleteCookie('user_data');
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      // Check if user has valid authentication token
+      const hasToken = getCookie('auth_token') || localStorage.getItem('token');
+
+      if (!hasToken) {
+        console.log('🔄 No auth token found - redirecting to login');
+        window.location.href = '/login';
+        return Promise.reject(error);
+      }
+
+      // If user has token, check if this is an authentication vs permission error
+      const errorMessage = error.response?.data?.message || '';
+
+      // Enhanced permission error detection
+      const isPermissionError =
+        errorMessage.includes('permission') ||
+        errorMessage.includes('Permission required') ||
+        errorMessage.includes('Write permission required') ||
+        errorMessage.includes('Budget ownership required') ||
+        errorMessage.includes('Access denied') ||
+        errorMessage.includes('access denied') ||
+        errorMessage.includes('Forbidden') ||
+        errorMessage.includes('forbidden') ||
+        error.response?.status === 403 || // 403 is typically permission error
+        // Check URL patterns that might indicate permission issues
+        (error.config?.url?.includes('/budgets/') && (
+          errorMessage.includes('budget') ||
+          errorMessage.includes('READ') ||
+          errorMessage.includes('WRITE')
+        ));
+
+      console.log('🔍 401 Error Analysis:', {
+        errorMessage,
+        isPermissionError,
+        hasToken,
+        willRedirect: !isPermissionError
+      });
+
+      if (isPermissionError) {
+        console.log('�️ Permission error detected - not redirecting to login');
+        // This is a permission error, not an authentication error
+        // Let the component handle the error display
+        return Promise.reject(error);
+      } else {
+        console.log('🔄 Authentication error detected - redirecting to login');
+        // This is an authentication error - clear tokens and redirect
+        deleteCookie('auth_token');
+        deleteCookie('user_data');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
     }
+
+    if (error.response?.status === 403) {
+      // 403 errors should never redirect to login - they are permission errors
+      console.log('🛡️ 403 Permission error - not redirecting to login');
+      return Promise.reject(error);
+    }
+
     return Promise.reject(error);
   }
 );

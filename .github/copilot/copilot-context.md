@@ -18,6 +18,7 @@ O **Budget App** é um sistema completo de gerenciamento de orçamentos pessoais
 - ✅ **Filtro por período de datas na importação (opcional)**
 - ✅ **Sistema avançado de detecção de duplicatas**
 - ✅ **Suporte a múltiplos bancos brasileiros (Nubank, BTG, Bradesco, etc.)**
+- ✅ **🆕 Exclusão de importações pendentes ou com erro**
 - ✅ Relatórios e análises financeiras
 - ✅ Dashboard com métricas
 
@@ -516,6 +517,8 @@ Backend: budgetAuth middleware valida:
 - ✅ **Validação de Conta**: Conta de destino deve pertencer ao orçamento ativo
 - ✅ **Suporte a Orçamentos Compartilhados**: Funciona com permissão WRITE
 - ✅ **Histórico de Importações**: Rastreamento completo de todas as importações
+- ✅ **🆕 Exclusão de Importações**: Permite cancelar/excluir sessões PENDING ou ERROR
+- ✅ **🆕 Gerenciamento de Sessões**: Visualização e controle completo do estado das importações
 
 #### Fluxo de Importação:
 1. **Upload**: Usuário seleciona conta + arquivo (CSV/PDF)
@@ -523,12 +526,24 @@ Backend: budgetAuth middleware valida:
 3. **Classificação**: Usuário categoriza cada transação manualmente
 4. **Confirmação**: Usuário decide importar (com ou sem duplicatas)
 5. **Finalização**: Transações são salvas como definitivas
+6. **🆕 Cancelamento**: Usuário pode excluir sessões PENDING/ERROR a qualquer momento
 
 #### Detecção de Duplicatas:
 - **Duplicata Exata**: Mesmo valor + mesma data
 - **Duplicata Similar**: Mesmo valor + até 3 dias de diferença + 80%+ similaridade na descrição
 - **Algoritmo Levenshtein**: Calcula similaridade entre textos
 - **Flexibilidade**: Usuário pode escolher importar duplicatas ou não
+
+#### 🆕 Gerenciamento de Sessões:
+- **Estados Disponíveis**: PENDING, PROCESSING, CLASSIFIED, COMPLETED, ERROR, CANCELLED
+- **Ações Permitidas**:
+  - PENDING: Continuar classificação ou Excluir
+  - ERROR: Excluir (arquivo com problema)
+  - PROCESSING: Aguardar (em andamento)
+  - COMPLETED: Visualizar (já finalizada)
+  - CANCELLED: Visualizar (cancelada pelo usuário)
+- **Exclusão Segura**: Remove sessão + transações temporárias associadas
+- **Validação de Permissões**: Apenas proprietário ou usuários com permissão WRITE podem excluir
 
 ### 8. **Validações de Segurança**
 - ✅ Usuário só acessa dados de orçamentos que possui ou que foram compartilhados
@@ -594,12 +609,17 @@ Usuário:
 6. POST /api/import/sessions/:sessionId/confirm → Confirma importação
 7. Transações são salvas como definitivas no sistema
 
+🆕 Cancelamento/Exclusão:
+8. DELETE /api/import/sessions/:sessionId → Cancela sessão PENDING/ERROR
+9. Sistema marca status como CANCELLED e preserva histórico
+
 Validações automáticas:
 - Tipo de arquivo (CSV/PDF até 10MB)
 - Encoding (UTF-8, ISO-8859-1, Win-1252)
 - Formato de dados (datas, valores monetários)
 - Duplicatas (mesmo valor + data + similaridade de texto)
 - Permissões (conta deve pertencer ao orçamento ativo)
+- 🆕 Validações de estado (só PENDING/ERROR podem ser canceladas)
 ```
 
 ### 6. **Navegação entre Orçamentos (Orçamento Ativo)**
@@ -1848,4 +1868,62 @@ COMPONENTE           STATUS    DETALHES
 
 ---
 
-**Última atualização:** 11 de setembro de 2025
+## 🆕 **FUNCIONALIDADE IMPLEMENTADA - 11 DE SETEMBRO DE 2025**
+
+### **Exclusão de Importações Pendentes ou com Erro**
+
+**🎯 Problema Resolvido:**
+- Usuários não conseguiam excluir importações que falharam ou ficaram pendentes
+- Acúmulo de sessões inválidas no histórico de importações
+- Necessidade de limpeza manual do banco de dados
+
+**✅ Solução Implementada:**
+
+#### **Frontend (ImportPage.tsx)**
+```tsx
+// Novo botão de exclusão nas sessões listadas
+{(session.status === 'PENDING' || session.status === 'ERROR') && canWrite && (
+  <button
+    onClick={() => handleCancelSession(session.id, session.filename)}
+    disabled={cancelSessionMutation.isPending}
+    className="text-red-600 hover:text-red-700 p-2 rounded-md hover:bg-red-50"
+    title="Excluir esta importação"
+  >
+    <Trash2 className="h-4 w-4" />
+  </button>
+)}
+```
+
+#### **Backend (ImportController.ts)**
+```typescript
+// Validação aprimorada com permissões e estados
+static async cancelSession(req: AuthRequest, res: Response) {
+  // Valida permissão (owner ou WRITE)
+  // Verifica se status permite cancelamento (não COMPLETED)
+  // Atualiza status para CANCELLED
+}
+```
+
+#### **Funcionalidades:**
+- ✅ **Botão de Lixeira**: Aparece apenas para sessões PENDING ou ERROR
+- ✅ **Validação de Permissões**: Apenas usuários com permissão WRITE podem excluir
+- ✅ **Confirmação**: Dialog de confirmação antes da exclusão
+- ✅ **Feedback Visual**: Loading state e mensagens de sucesso/erro
+- ✅ **Responsividade**: Seguindo padrões mobile-first do sistema
+- ✅ **Segurança**: Backend valida permissões e estado da sessão
+- ✅ **Histórico Preservado**: Status CANCELLED mantido para auditoria
+
+#### **Estados de Sessão Suportados:**
+- `PENDING` → Pode ser cancelada (classificação incompleta)
+- `ERROR` → Pode ser cancelada (erro no processamento)
+- `PROCESSING` → Não pode ser cancelada (em andamento)
+- `COMPLETED` → Não pode ser cancelada (já finalizada)
+- `CANCELLED` → Estado final (cancelada pelo usuário)
+
+#### **Rotas Implementadas:**
+- `DELETE /api/import/sessions/:sessionId` (orçamento pessoal)
+- `DELETE /api/budgets/:budgetId/import/sessions/:sessionId` (orçamento compartilhado)
+
+---
+
+**Última atualização:** 11 de setembro de 2025 - 17:05

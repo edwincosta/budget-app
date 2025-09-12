@@ -1193,30 +1193,30 @@ router.post('/:budgetId/import/upload', budgetAuth, requireWritePermission, uplo
  * GET /api/budgets/:budgetId/import/sessions
  * Lista sessões de importação de orçamento específico
  */
-router.get('/:budgetId/import/sessions', budgetAuth, ImportController.getSessions);
+router.get('/:budgetId/import/sessions', auth, budgetAuth, ImportController.getSessions);
 
 /**
  * GET /api/budgets/:budgetId/import/sessions/:sessionId
  * Obtém transações de uma sessão para classificação
  */
-router.get('/:budgetId/import/sessions/:sessionId', budgetAuth, ImportController.getSessionTransactions);
+router.get('/:budgetId/import/sessions/:sessionId', auth, budgetAuth, ImportController.getSessionTransactions);
 
 /**
  * PUT /api/budgets/:budgetId/import/transactions/:transactionId/classify
  * Classifica uma transação individual
  */
-router.put('/:budgetId/import/transactions/:transactionId/classify', budgetAuth, requireWritePermission, ImportController.classifyTransaction);
+router.put('/:budgetId/import/transactions/:transactionId/classify', auth, budgetAuth, requireWritePermission, ImportController.classifyTransaction);
 
 /**
  * POST /api/budgets/:budgetId/import/sessions/:sessionId/confirm
  * Confirma importação das transações classificadas
  */
-router.post('/:budgetId/import/sessions/:sessionId/confirm', budgetAuth, requireWritePermission, ImportController.confirmImport);
+router.post('/:budgetId/import/sessions/:sessionId/confirm', auth, budgetAuth, requireWritePermission, ImportController.confirmImport);
 
 /**
  * DELETE /api/budgets/:budgetId/import/sessions/:sessionId
  * Cancela sessão de importação
  */
-router.delete('/:budgetId/import/sessions/:sessionId', budgetAuth, requireWritePermission, ImportController.cancelSession);
+router.delete('/:budgetId/import/sessions/:sessionId', auth, budgetAuth, requireWritePermission, ImportController.cancelSession);
 
 export default router;
