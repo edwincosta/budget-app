@@ -67,7 +67,7 @@ app.get('/health', async (req, res) => {
   try {
     // Check database connection
     await prisma.$queryRaw`SELECT 1`;
-    
+
     res.status(200).json({
       status: 'OK',
       timestamp: new Date().toISOString(),
@@ -157,9 +157,9 @@ console.log('   📥 Import: /api/import/* (file import system)');
 if (process.env.NODE_ENV === 'production') {
   const clientBuildPath = path.join(__dirname, '../../client/dist');
   console.log(`📁 Serving static files from: ${clientBuildPath}`);
-  
+
   app.use(express.static(clientBuildPath));
-  
+
   // Handle React Router - serve index.html for all non-API routes
   app.get('*', (req, res) => {
     if (!req.path.startsWith('/api') && !req.path.startsWith('/health')) {
@@ -168,7 +168,7 @@ if (process.env.NODE_ENV === 'production') {
       res.status(404).json({ error: 'API endpoint not found' });
     }
   });
-  
+
   console.log('✅ Static file serving configured for production');
 }
 
