@@ -6,6 +6,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
+import path from 'path';
 import { PrismaClient } from '@prisma/client';
 
 console.log('✅ Core imports loaded successfully');
@@ -38,11 +39,13 @@ const PORT = process.env.PORT || 3001;
 
 console.log('✅ Express app and Prisma client created');
 
-// Rate limiting (mais permissivo para desenvolvimento)
+// Rate limiting (mais restritivo para produção)
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 1000, // limit each IP to 1000 requests per windowMs (mais permissivo)
+  windowMs: process.env.RATE_LIMIT_WINDOW_MS ? parseInt(process.env.RATE_LIMIT_WINDOW_MS) : 15 * 60 * 1000, // 15 minutes
+  max: process.env.RATE_LIMIT_MAX_REQUESTS ? parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) : (process.env.NODE_ENV === 'production' ? 100 : 1000),
   message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 // Middleware
@@ -59,15 +62,32 @@ app.use(express.urlencoded({ extended: true }));
 console.log('✅ Complete middleware configured');
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+app.get('/health', async (req, res) => {
   console.log('📋 Health check requested');
-  res.status(200).json({
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development',
-    runtime: 'ts-node',
-    message: 'Complete Budget Server with TS-NODE working!'
-  });
+  try {
+    // Check database connection
+    await prisma.$queryRaw`SELECT 1`;
+    
+    res.status(200).json({
+      status: 'OK',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+      runtime: 'ts-node',
+      database: 'connected',
+      version: '1.0.0',
+      message: 'Complete Budget Server working!'
+    });
+  } catch (error) {
+    console.error('❌ Health check failed:', error);
+    res.status(503).json({
+      status: 'ERROR',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+      database: 'disconnected',
+      error: process.env.NODE_ENV === 'production' ? 'Service unavailable' : error,
+      message: 'Server unhealthy'
+    });
+  }
 });
 
 // Test endpoint para verificar se a nova arquitetura está funcionando
@@ -132,6 +152,25 @@ console.log('   💰 Transactions: /api/transactions (default budget context)');
 console.log('   📈 Dashboard: /api/dashboard/* (default budget context)');
 console.log('   📄 Reports: /api/reports (default budget context)');
 console.log('   📥 Import: /api/import/* (file import system)');
+
+// Serve static files in production
+if (process.env.NODE_ENV === 'production') {
+  const clientBuildPath = path.join(__dirname, '../../client/dist');
+  console.log(`📁 Serving static files from: ${clientBuildPath}`);
+  
+  app.use(express.static(clientBuildPath));
+  
+  // Handle React Router - serve index.html for all non-API routes
+  app.get('*', (req, res) => {
+    if (!req.path.startsWith('/api') && !req.path.startsWith('/health')) {
+      res.sendFile(path.join(clientBuildPath, 'index.html'));
+    } else {
+      res.status(404).json({ error: 'API endpoint not found' });
+    }
+  });
+  
+  console.log('✅ Static file serving configured for production');
+}
 
 // Error handling
 app.use(notFound);

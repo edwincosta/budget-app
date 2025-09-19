@@ -8,13 +8,18 @@
     "dev:server": "cd server && npm run dev",
     "build:client": "cd client && npm run build",
     "build:server": "cd server && npm run build",
+    "build:production": "npm run build:server && npm run build:client",
     "start:client": "cd client && npm run preview",
     "start:server": "cd server && npm start",
+    "start:production": "cd server && npm start",
     "docker:up": "docker-compose up --build",
     "docker:down": "docker-compose down",
+    "docker:production": "docker build -f Dockerfile.production -t budget-app:latest .",
     "prisma:generate": "cd server && npx prisma generate",
     "prisma:migrate": "cd server && npx prisma migrate dev",
-    "prisma:studio": "cd server && npx prisma studio"
+    "prisma:migrate:deploy": "cd server && npx prisma migrate deploy",
+    "prisma:studio": "cd server && npx prisma studio",
+    "deploy:railway": "railway deploy"
   },
   "keywords": [
     "budget",
@@ -27,5 +32,9 @@
   "license": "MIT",
   "dependencies": {
     "axios": "^1.12.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
   }
 }

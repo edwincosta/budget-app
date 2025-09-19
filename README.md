@@ -114,12 +114,67 @@ docker-compose -f docker-compose.prod.yml up --build
 - ✅ Design responsivo e moderno
 - ✅ PWA ready
 
-## 🚢 Deploy
+## 🚢 Deploy em Produção (v1.0)
 
-Este projeto está configurado para deploy em:
-- **Railway** (recomendado)
-- **Render**
-- **Vercel** (frontend only)
+### 🎯 Deploy no Railway (Recomendado - Gratuito)
+
+O Budget App está totalmente configurado para deploy no [Railway](https://railway.app):
+
+1. **Preparar para deploy:**
+   ```bash
+   node deploy-setup.js
+   ```
+
+2. **Acessar Railway:**
+   - Vá para https://railway.app
+   - Faça login com GitHub
+   - Clique em "New Project"
+
+3. **Configurar projeto:**
+   - Conecte seu repositório GitHub
+   - Railway detectará automaticamente as configurações
+
+4. **Adicionar PostgreSQL:**
+   - Clique em "Add Plugin" → "PostgreSQL"
+   - Será criado automaticamente com DATABASE_URL
+
+5. **Configurar variáveis de ambiente:**
+   ```bash
+   JWT_SECRET=your_super_secure_32_character_secret_here
+   NODE_ENV=production
+   CORS_ORIGIN=https://your-app-name.railway.app
+   BCRYPT_ROUNDS=12
+   ```
+
+6. **Deploy automático será executado!**
+
+### ⚡ Comandos de Produção
+
+```bash
+# Build completo para produção
+npm run build:production
+
+# Iniciar em produção (Railway usa automaticamente)
+npm run start:production
+
+# Deploy setup
+node deploy-setup.js
+```
+
+### 🔧 Configurações de Produção
+
+- ✅ **Rate limiting**: 100 req/15min em produção
+- ✅ **Security headers**: Helmet configurado
+- ✅ **Compression**: Gzip ativado
+- ✅ **Health checks**: `/health` endpoint
+- ✅ **Static files**: React servido pelo Express
+- ✅ **Database migrations**: Automática no deploy
+- ✅ **Error handling**: Logs estruturados
+
+### 📋 Documentação Completa
+
+- [`RAILWAY_DEPLOY.md`](./RAILWAY_DEPLOY.md) - Guia detalhado do Railway
+- [`SETUP.md`](./SETUP.md) - Configuração de desenvolvimento
 
 ## 📄 Licença
 

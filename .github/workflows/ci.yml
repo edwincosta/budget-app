@@ -1,0 +1,74 @@
+name: Production Build & Test
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_USER: test_user
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: |
+          server/package-lock.json
+          client/package-lock.json
+    
+    - name: Install server dependencies
+      run: cd server && npm ci
+    
+    - name: Install client dependencies
+      run: cd client && npm ci
+    
+    - name: Generate Prisma client
+      run: cd server && npx prisma generate
+      env:
+        DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+    
+    - name: Run database migrations
+      run: cd server && npx prisma migrate deploy
+      env:
+        DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+    
+    - name: Run server tests
+      run: cd server && npm test
+      env:
+        DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+        JWT_SECRET: test_jwt_secret_for_ci_only
+        NODE_ENV: test
+    
+    - name: Build server
+      run: cd server && npm run build
+      env:
+        DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+    
+    - name: Build client
+      run: cd client && npm run build
+      env:
+        VITE_API_URL: http://localhost:3001
+        
+    - name: Lint client
+      run: cd client && npm run lint

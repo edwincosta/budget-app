@@ -1,0 +1,60 @@
+# Production Dockerfile for Budget App
+FROM node:18-alpine AS base
+
+# Install dependencies only when needed
+FROM base AS deps
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+
+# Install server dependencies
+COPY server/package*.json ./server/
+RUN cd server && npm ci --only=production
+
+# Install client dependencies  
+COPY client/package*.json ./client/
+RUN cd client && npm ci --only=production
+
+# Rebuild the source code only when needed
+FROM base AS builder
+WORKDIR /app
+
+# Copy dependencies
+COPY --from=deps /app/server/node_modules ./server/node_modules
+COPY --from=deps /app/client/node_modules ./client/node_modules
+
+# Copy source code
+COPY server ./server
+COPY client ./client
+
+# Generate Prisma client
+RUN cd server && npx prisma generate
+
+# Build server
+RUN cd server && npm run build
+
+# Build client
+RUN cd client && npm run build
+
+# Production image
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# Copy built application
+COPY --from=builder /app/server/dist ./server/dist
+COPY --from=builder /app/server/node_modules ./server/node_modules
+COPY --from=builder /app/server/prisma ./server/prisma
+COPY --from=builder /app/server/package.json ./server/
+COPY --from=builder /app/client/dist ./client/dist
+
+USER nextjs
+
+EXPOSE 3001
+
+ENV PORT=3001
+
+CMD ["node", "server/dist/index.js"]

@@ -1,0 +1,10 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "cd server && npm run railway:start"
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+
+[env]
+NODE_ENV = "production"
