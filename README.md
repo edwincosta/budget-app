@@ -71,6 +71,8 @@ npm run dev:server    # Backend na porta 3001
 npm run dev:client    # Frontend na porta 5173
 ```
 
+> 📋 **Dados de Desenvolvimento**: O sistema cria automaticamente usuários de teste, orçamentos e categorias. Consulte [`server/src/utils/DEVELOPMENT.md`](./server/src/utils/DEVELOPMENT.md) para detalhes sobre seed automático e parsers.
+
 ### Produção
 ```bash
 # Build e execute
@@ -175,6 +177,7 @@ node deploy-setup.js
 
 - [`RAILWAY_DEPLOY.md`](./RAILWAY_DEPLOY.md) - Guia detalhado do Railway
 - [`SETUP.md`](./SETUP.md) - Configuração de desenvolvimento
+- [`server/src/utils/DEVELOPMENT.md`](./server/src/utils/DEVELOPMENT.md) - Sistema de seed e parsers
 
 ## 📄 Licença
 

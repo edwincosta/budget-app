@@ -28,6 +28,9 @@ import importRoutes from './routes/import';
 import { errorHandler } from './middleware/errorHandler';
 import { notFound } from './middleware/notFound';
 
+// Seed function for development
+import { seedDatabase } from './utils/seed';
+
 console.log('✅ All imports loaded successfully');
 
 dotenv.config();
@@ -196,13 +199,23 @@ export default app;
 
 // Start server only if this file is run directly
 if (require.main === module) {
-  app.listen(PORT, () => {
+  app.listen(PORT, async () => {
     console.log(`🚀 Complete Budget Server with TS-NODE running on port ${PORT}`);
     console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`🔗 Health check: http://localhost:${PORT}/health`);
     console.log(`🧪 Test endpoint: http://localhost:${PORT}/api/test`);
     console.log(`🎉 OPÇÃO C3 - Complete TS-NODE Budget System funcionando!`);
     console.log(`💻 Complete budget application ready!`);
+
+    // Run seed in development mode
+    if (process.env.NODE_ENV === 'development' || !process.env.NODE_ENV) {
+      console.log('🌱 Running development seed...');
+      try {
+        await seedDatabase();
+      } catch (error) {
+        console.error('❌ Seed failed:', error);
+      }
+    }
   });
 }
 
