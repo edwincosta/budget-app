@@ -1,5 +1,9 @@
 import { PrismaClient } from '@prisma/client';
 
+// Mock problematic modules before any imports
+jest.mock('pdf-parse');
+jest.mock('pdfjs-dist/legacy/build/pdf.mjs');
+
 // Global test environment setup
 declare global {
   var prisma: PrismaClient;

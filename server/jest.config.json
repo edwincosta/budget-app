@@ -1,7 +1,9 @@
 {
   "preset": "ts-jest",
   "testEnvironment": "node",
-  "roots": ["<rootDir>/src"],
+  "roots": [
+    "<rootDir>/src"
+  ],
   "testMatch": [
     "**/__tests__/**/*.ts",
     "**/?(*.)+(spec|test).ts"
@@ -15,15 +17,28 @@
     "!src/seed.ts",
     "!src/index.ts"
   ],
-  "setupFilesAfterEnv": ["<rootDir>/src/tests/setup.ts"],
+  "setupFilesAfterEnv": [
+    "<rootDir>/src/tests/setup.ts"
+  ],
   "testTimeout": 30000,
   "maxWorkers": 1,
+  "moduleNameMapper": {
+    "^@/(.*)$": "<rootDir>/src/$1",
+    "^pdf-parse$": "<rootDir>/src/tests/__mocks__/pdf-parse.js",
+    "^pdfjs-dist/legacy/build/pdf.mjs$": "<rootDir>/src/tests/__mocks__/pdfjs-dist.js"
+  },
+  "transformIgnorePatterns": [
+    "node_modules/(?!(pdfjs-dist)/)"
+  ],
+  "extensionsToTreatAsEsm": [
+    ".ts"
+  ],
   "globals": {
     "ts-jest": {
-      "useESM": false
+      "useESM": false,
+      "tsconfig": {
+        "module": "commonjs"
+      }
     }
-  },
-  "moduleNameMapping": {
-    "^@/(.*)$": "<rootDir>/src/$1"
   }
 }
