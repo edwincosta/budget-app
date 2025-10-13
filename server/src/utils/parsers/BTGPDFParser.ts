@@ -1,5 +1,5 @@
 import * as fs from 'fs';
-import pdf from 'pdf-parse';
+const pdf = require('pdf-parse');
 import { BankParser, ParseResult, ParseOptions } from './BankParser';
 import { ParsedTransaction } from '../csvParser';
 

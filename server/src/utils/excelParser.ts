@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx';
+import { ExcelReader } from './excelReader';
 import * as fs from 'fs';
 import { ParsedTransaction, ParseResult, ParseOptions } from './csvParser';
 
@@ -186,96 +186,86 @@ export class ExcelParser {
      * Parseia arquivo Excel/XLS
      */
     static async parseFile(filePath: string, options?: ParseOptions): Promise<ParseResult> {
-        return new Promise((resolve) => {
-            const transactions: ParsedTransaction[] = [];
-            const errors: string[] = [];
-            let totalProcessed = 0;
+        const transactions: ParsedTransaction[] = [];
+        const errors: string[] = [];
+        let totalProcessed = 0;
 
-            try {
-                // Ler arquivo Excel
-                const workbook = XLSX.readFile(filePath);
+        try {
+            // Ler arquivo Excel
+            const data = await ExcelReader.readFile(filePath);
 
-                // Pegar a primeira planilha
-                const sheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[sheetName];
-
-                // Converter para JSON
-                const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-
-                if (data.length === 0) {
-                    errors.push('Arquivo Excel vazio ou sem dados');
-                    resolve({ transactions, errors, totalProcessed });
-                    return;
-                }
-
-                // Primeira linha são os headers
-                const headers = (data[0] as string[]).map(h => h?.toString() || '');
-                const format = this.detectFormat(headers);
-
-                console.log(`Formato detectado: ${format}`);
-                console.log(`Headers: ${headers.join(', ')}`);
-
-                // Processar linhas de dados
-                for (let i = 1; i < data.length; i++) {
-                    try {
-                        totalProcessed++;
-                        const rowArray = data[i] as any[];
-
-                        // Converter array para objeto com headers
-                        const row: any = {};
-                        headers.forEach((header, index) => {
-                            row[header] = rowArray[index];
-                        });
-
-                        // Pular linhas vazias
-                        if (Object.values(row).every(value => !value || value.toString().trim() === '')) {
-                            continue;
-                        }
-
-                        const transaction = this.mapTransaction(row, format, headers);
-
-                        // Validações básicas
-                        if (!transaction.description) {
-                            errors.push(`Linha ${i + 1}: Descrição em branco`);
-                            continue;
-                        }
-
-                        if (!transaction.date || isNaN(transaction.date.getTime())) {
-                            errors.push(`Linha ${i + 1}: Data inválida`);
-                            continue;
-                        }
-
-                        // Aplica filtro de data se especificado
-                        if (options?.dateRange) {
-                            if (options.dateRange.startDate && transaction.date < options.dateRange.startDate) {
-                                continue; // Pula transação fora do período
-                            }
-                            if (options.dateRange.endDate && transaction.date > options.dateRange.endDate) {
-                                continue; // Pula transação fora do período
-                            }
-                        }
-
-                        transactions.push(transaction);
-
-                    } catch (error) {
-                        errors.push(`Linha ${i + 1}: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
-                    }
-                }
-
-                resolve({
-                    transactions,
-                    errors,
-                    totalProcessed
-                });
-
-            } catch (error) {
-                errors.push(`Erro ao processar arquivo Excel: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
-                resolve({
-                    transactions,
-                    errors,
-                    totalProcessed
-                });
+            if (data.length === 0) {
+                errors.push('Arquivo Excel vazio ou sem dados');
+                return { transactions, errors, totalProcessed };
             }
-        });
+
+            // Primeira linha são os headers
+            const headers = (data[0] as string[]).map(h => h?.toString() || '');
+            const format = this.detectFormat(headers);
+
+            console.log(`Formato detectado: ${format}`);
+            console.log(`Headers: ${headers.join(', ')}`);
+
+            // Processar linhas de dados
+            for (let i = 1; i < data.length; i++) {
+                try {
+                    totalProcessed++;
+                    const rowArray = data[i] as any[];
+
+                    // Converter array para objeto com headers
+                    const row: any = {};
+                    headers.forEach((header, index) => {
+                        row[header] = rowArray[index];
+                    });
+
+                    // Pular linhas vazias
+                    if (Object.values(row).every(value => !value || value.toString().trim() === '')) {
+                        continue;
+                    }
+
+                    const transaction = this.mapTransaction(row, format, headers);
+
+                    // Validações básicas
+                    if (!transaction.description) {
+                        errors.push(`Linha ${i + 1}: Descrição em branco`);
+                        continue;
+                    }
+
+                    if (!transaction.date || isNaN(transaction.date.getTime())) {
+                        errors.push(`Linha ${i + 1}: Data inválida`);
+                        continue;
+                    }
+
+                    // Aplica filtro de data se especificado
+                    if (options?.dateRange) {
+                        if (options.dateRange.startDate && transaction.date < options.dateRange.startDate) {
+                            continue; // Pula transação fora do período
+                        }
+                        if (options.dateRange.endDate && transaction.date > options.dateRange.endDate) {
+                            continue; // Pula transação fora do período
+                        }
+                    }
+
+                    transactions.push(transaction);
+
+                } catch (error) {
+                    errors.push(`Linha ${i + 1}: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+                }
+            }
+
+            return {
+                transactions,
+                errors,
+                totalProcessed
+            };
+
+        } catch (error) {
+            errors.push(`Erro ao processar arquivo Excel: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+            return {
+                transactions,
+                errors,
+                totalProcessed
+            };
+        }
     }
 }

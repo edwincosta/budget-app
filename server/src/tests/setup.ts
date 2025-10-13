@@ -1,5 +1,16 @@
 import { PrismaClient } from '@prisma/client';
 
+// Import Jest globals
+import 'jest';
+
+// Mock problematic modules before any imports
+jest.mock('pdf-parse');
+jest.mock('pdfjs-dist/legacy/build/pdf.mjs');
+
+// Setup environment variables for tests
+process.env.JWT_SECRET = process.env.JWT_SECRET || 'test_jwt_secret_for_github_actions_pipeline';
+process.env.NODE_ENV = 'test';
+
 // Global test environment setup
 declare global {
   var prisma: PrismaClient;
