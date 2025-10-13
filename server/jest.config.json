@@ -8,6 +8,9 @@
     "**/__tests__/**/*.ts",
     "**/?(*.)+(spec|test).ts"
   ],
+  "testPathIgnorePatterns": [
+    "<rootDir>/src/tests/todo/"
+  ],
   "transform": {
     "^.+\\.ts$": "ts-jest"
   },

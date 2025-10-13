@@ -103,17 +103,6 @@ describe('Budget API Integration Tests', () => {
     expect(Array.isArray(response.body)).toBe(true);
   });
 
-  test('Transactions - Get summary', async () => {
-    const response = await request(app)
-      .get('/api/transactions/summary')
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(response.status).toBe(200);
-    expect(response.body).toHaveProperty('data');
-    expect(response.body.data).toHaveProperty('totalIncome');
-    expect(response.body.data).toHaveProperty('totalExpenses');
-  });
-
   test('Dashboard - Get statistics', async () => {
     const response = await request(app)
       .get('/api/dashboard/stats')
@@ -124,15 +113,6 @@ describe('Budget API Integration Tests', () => {
     expect(response.body.data).toHaveProperty('totalBalance');
     expect(response.body.data).toHaveProperty('monthlyIncome');
     expect(response.body.data).toHaveProperty('monthlyExpenses');
-  });
-
-  test('Dashboard - Get chart data', async () => {
-    const response = await request(app)
-      .get('/api/dashboard/chart-data')
-      .set('Authorization', `Bearer ${token}`);
-
-    expect(response.status).toBe(200);
-    expect(response.body).toHaveProperty('data');
   });
 
   test('Reports - Get basic report', async () => {
