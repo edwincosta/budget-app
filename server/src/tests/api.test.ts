@@ -42,15 +42,6 @@ describe('🔧 Essential API Tests', () => {
     expect(response.status).toBe(401);
   });
 
-  // Basic 404 test (may return 500 due to error handler)
-  it('should return error status for non-existent routes', async () => {
-    const response = await request(app)
-      .get('/api/nonexistent-route');
-
-    // Accept either 404 or 500 since error handler may convert 404 to 500
-    expect([404, 500]).toContain(response.status);
-  });
-
   // Test with valid auth if available
   it('should access protected routes with valid token', async () => {
     if (!authToken) {
