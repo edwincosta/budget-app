@@ -1,4 +1,6 @@
-console.log('🚀 Starting Complete Budget Server with TS-NODE...');
+console.log('🚀 Starting Complete Budget Server...');
+console.log('📦 NODE_ENV:', process.env.NODE_ENV || 'development');
+console.log('🔢 Node version:', process.version);
 
 import express from 'express';
 import cors from 'cors';
@@ -64,9 +66,22 @@ app.use(express.urlencoded({ extended: true }));
 
 console.log('✅ Complete middleware configured');
 
-// Health check endpoint
-app.get('/health', async (req, res) => {
+// Health check endpoint - basic (always available)
+app.get('/health', (req, res) => {
   console.log('📋 Health check requested');
+  res.status(200).json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    runtime: process.env.NODE_ENV === 'production' ? 'node' : 'ts-node',
+    version: '1.0.0',
+    message: 'Budget Server is running!'
+  });
+});
+
+// Health check with database - detailed
+app.get('/health/detailed', async (req, res) => {
+  console.log('📋 Detailed health check requested');
   try {
     // Check database connection
     await prisma.$queryRaw`SELECT 1`;
@@ -75,20 +90,20 @@ app.get('/health', async (req, res) => {
       status: 'OK',
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV || 'development',
-      runtime: 'ts-node',
+      runtime: process.env.NODE_ENV === 'production' ? 'node' : 'ts-node',
       database: 'connected',
       version: '1.0.0',
-      message: 'Complete Budget Server working!'
+      message: 'Complete Budget Server working with database!'
     });
   } catch (error) {
-    console.error('❌ Health check failed:', error);
+    console.error('❌ Database health check failed:', error);
     res.status(503).json({
       status: 'ERROR',
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV || 'development',
       database: 'disconnected',
-      error: process.env.NODE_ENV === 'production' ? 'Service unavailable' : error,
-      message: 'Server unhealthy'
+      error: process.env.NODE_ENV === 'production' ? 'Database unavailable' : String(error),
+      message: 'Server running but database unhealthy'
     });
   }
 });
@@ -199,24 +214,61 @@ export default app;
 
 // Start server only if this file is run directly
 if (require.main === module) {
-  app.listen(PORT, async () => {
-    console.log(`🚀 Complete Budget Server with TS-NODE running on port ${PORT}`);
-    console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`🔗 Health check: http://localhost:${PORT}/health`);
-    console.log(`🧪 Test endpoint: http://localhost:${PORT}/api/test`);
-    console.log(`🎉 OPÇÃO C3 - Complete TS-NODE Budget System funcionando!`);
-    console.log(`💻 Complete budget application ready!`);
+  const startServer = async () => {
+    try {
+      console.log('🔍 Testing database connection...');
+      
+      // Test database connection
+      await prisma.$connect();
+      console.log('✅ Database connected successfully');
+      
+      // Start server
+      const server = app.listen(PORT, () => {
+        console.log(`🚀 Complete Budget Server running on port ${PORT}`);
+        console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+        console.log(`🔗 Health check: http://localhost:${PORT}/health`);
+        console.log(`🧪 Test endpoint: http://localhost:${PORT}/api/test`);
+        console.log(`🎉 Complete Budget System ready!`);
+        console.log(`💻 Server successfully started!`);
+      });
 
-    // Run seed in development mode
-    if (process.env.NODE_ENV === 'development' || !process.env.NODE_ENV) {
-      console.log('🌱 Running development seed...');
-      try {
-        await seedDatabase();
-      } catch (error) {
-        console.error('❌ Seed failed:', error);
+      // Handle server errors
+      server.on('error', (error) => {
+        console.error('❌ Server error:', error);
+        process.exit(1);
+      });
+
+      // Graceful shutdown
+      const shutdown = async () => {
+        console.log('🛑 Shutting down server...');
+        await prisma.$disconnect();
+        server.close(() => {
+          console.log('✅ Server closed');
+          process.exit(0);
+        });
+      };
+
+      process.on('SIGTERM', shutdown);
+      process.on('SIGINT', shutdown);
+
+      // Run seed in development mode after server starts
+      if (process.env.NODE_ENV === 'development' || !process.env.NODE_ENV) {
+        console.log('🌱 Running development seed...');
+        try {
+          await seedDatabase();
+        } catch (error) {
+          console.error('❌ Seed failed:', error);
+        }
       }
+
+    } catch (error) {
+      console.error('❌ Failed to start server:', error);
+      console.error('💡 Check if DATABASE_URL is set correctly');
+      process.exit(1);
     }
-  });
+  };
+
+  startServer();
 }
 
 console.log('✅ Server initialization complete');

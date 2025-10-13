@@ -14,14 +14,16 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test-server": "node dist/simple-server.js",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:migrate:deploy": "prisma migrate deploy",
-    "prisma:studio": "prisma studio",
-    "prisma:reset": "prisma migrate reset",
+    "prisma:generate": "npx prisma generate",
+    "prisma:migrate": "npx prisma migrate dev",
+    "prisma:migrate:deploy": "npx prisma migrate deploy",
+    "prisma:studio": "npx prisma studio",
+    "prisma:reset": "npx prisma migrate reset",
     "seed": "ts-node src/utils/seed.ts",
-    "railway:build": "npm ci && npm run prisma:generate && npm run build",
-    "railway:start": "npm run prisma:migrate:deploy && npm start"
+    "railway:build": "npm install && npm run prisma:generate && npm run build",
+    "railway:start": "npm run prisma:migrate:deploy && npm start",
+    "railway:start:simple": "npm start",
+    "railway:dev": "npm run prisma:migrate:deploy && npm run start:ts"
   },
   "dependencies": {
     "@prisma/client": "^6.17.1",
@@ -43,7 +45,8 @@
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
     "node-xlsx": "^0.24.0",
-    "pdf-parse": "^2.3.0"
+    "pdf-parse": "^2.3.0",
+    "prisma": "^6.17.1"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -56,7 +59,6 @@
     "@types/supertest": "^6.0.3",
     "jest": "^30.2.0",
     "nodemon": "^3.0.1",
-    "prisma": "^6.17.1",
     "supertest": "^7.1.4",
     "ts-jest": "^29.4.5",
     "ts-node": "^10.9.1",
