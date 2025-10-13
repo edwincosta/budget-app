@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx';
+import { ExcelReader } from '../excelReader';
 import { BankParser, ParseResult, ParseOptions } from './BankParser';
 import { ParsedTransaction } from '../csvParser';
 
@@ -28,10 +28,7 @@ export class ItauParser extends BankParser {
         try {
             console.log('🏦 Itaú: Processando arquivo Excel');
 
-            const workbook = XLSX.readFile(filePath);
-            const sheetName = workbook.SheetNames[0]; // Primeira aba
-            const sheet = workbook.Sheets[sheetName];
-            const data = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
+            const data = await ExcelReader.readFile(filePath);
 
             const accountType = this.detectAccountTypeFromFile(filePath);
 

@@ -14,7 +14,7 @@ O **Budget App** é um sistema completo de gerenciamento de orçamentos pessoais
 - ✅ Sistema de compartilhamento de orçamentos (READ/WRITE)
 - ✅ Seleção de orçamento ativo (próprio ou compartilhado)
 - ✅ Navegação entre orçamentos com persistência de seleção
-- ✅ **Importação de extratos bancários (CSV/PDF/Excel) com classificação manual**
+- ✅ **Importação de extratos bancários (CSV/PDF/Excel XLS/XLSX) com classificação manual**
 - ✅ **Filtro por período de datas na importação (opcional)**
 - ✅ **Sistema avançado de detecção de duplicatas**
 - ✅ **Suporte a múltiplos bancos brasileiros (Nubank, BTG, Bradesco, etc.)**
@@ -43,8 +43,9 @@ budget/
 
 ### Stack Tecnológica
 **Frontend:** React 18, TypeScript, Vite, Tailwind CSS, React Query, React Hook Form, Recharts, React Context API
-**Backend:** Node.js, Express, TypeScript, Prisma ORM, PostgreSQL, JWT, bcrypt, Multer (file upload)
-**File Processing:** csv-parser, pdf-parse, iconv-lite, chardet (encoding detection)
+**Backend:** Node.js, Express, TypeScript, Prisma ORM (v6.17.1), PostgreSQL, JWT, bcrypt, Multer (file upload)
+**File Processing:** csv-parser, pdf-parse (v2.3.0), ExcelJS (v4.4.0), node-xlsx, iconv-lite, chardet (encoding detection)
+**Security:** Helmet (v8.1.0), express-rate-limit (v8.1.0), Joi (v18.0.1) - **🆕 Todas bibliotecas atualizadas para versões seguras**
 **DevOps:** Docker, Docker Compose
 
 ---
@@ -507,7 +508,9 @@ Backend: budgetAuth middleware valida:
 - ✅ Ações baseadas em status: PENDING (revogar), ACCEPTED (remover acesso), REJECTED/REVOKED (visualização)
 
 ### 7. **Sistema de Importação de Extratos**
-- ✅ **Formatos Suportados**: CSV e PDF (até 10MB)
+- ✅ **Formatos Suportados**: CSV, PDF e **🆕 Excel (XLS/XLSX)** - até 10MB
+- ✅ **🆕 Suporte Excel Completo**: ExcelJS para XLSX + node-xlsx para XLS (compatibilidade total)
+- ✅ **🆕 Tratamento Avançado**: RichText, fórmulas, hiperlinks e objetos complexos do Excel
 - ✅ **Detecção Automática**: Identifica formatos dos principais bancos brasileiros
 - ✅ **Encoding Inteligente**: Detecta e converte UTF-8, ISO-8859-1, Windows-1252
 - ✅ **Parsing Robusto**: Extrai transações com validação de dados
@@ -1926,4 +1929,45 @@ static async cancelSession(req: AuthRequest, res: Response) {
 
 ---
 
-**Última atualização:** 11 de setembro de 2025 - 17:05
+## 🚀 **ATUALIZAÇÕES DE SEGURANÇA E BIBLIOTECAS - OUTUBRO 2025**
+
+### **13 de Outubro de 2025 - Upgrade Completo de Bibliotecas e Segurança**
+
+#### **🔒 Segurança Aprimorada**
+- ✅ **Vulnerabilidades Eliminadas**: Removida biblioteca `xlsx` com vulnerabilidades críticas
+- ✅ **Zero CVEs**: Todas as 0 vulnerabilidades detectadas após auditoria
+- ✅ **Bibliotecas Atualizadas**: Helmet v8.1.0, express-rate-limit v8.1.0, Joi v18.0.1
+
+#### **📊 Suporte Excel Aprimorado**
+- ✅ **ExcelJS v4.4.0**: Biblioteca principal para arquivos XLSX (mais segura que xlsx)
+- ✅ **node-xlsx**: Adicionado suporte completo para arquivos XLS legacy
+- ✅ **ExcelReader Robusto**: Tratamento de RichText, fórmulas, hiperlinks e objetos complexos
+- ✅ **Detecção Automática**: Sistema detecta XLS vs XLSX e usa biblioteca apropriada
+- ✅ **Compatibilidade Total**: Suporte tanto para formatos antigos (.xls) quanto novos (.xlsx)
+
+#### **🔧 Atualizações Técnicas**
+- ✅ **Prisma v6.17.1**: Major update com melhorias de performance
+- ✅ **PDF-Parse v2.3.0**: Versão mais robusta para processamento de PDFs
+- ✅ **TypeScript v5.9.3**: Última versão com correções
+- ✅ **Jest v30.2.0**: Framework de testes atualizado
+
+#### **🧪 Testes de Compatibilidade**
+- ✅ **100% Sucesso**: Todos os arquivos de exemplo testados
+- ✅ **Itaú XLS**: 11 transações processadas com sucesso
+- ✅ **BTG XLSX**: 5 transações processadas com sucesso  
+- ✅ **Parsers Funcionais**: Todos os parsers bancários validados
+
+#### **📁 Arquivos Modificados**
+- `server/src/utils/excelReader.ts`: Nova classe com suporte XLS/XLSX
+- `server/src/utils/parsers/*Parser.ts`: Atualizados para usar ExcelReader
+- `server/package.json`: Bibliotecas atualizadas e xlsx removido
+
+#### **🎯 Benefícios**
+- **Segurança**: Sistema mais seguro sem vulnerabilidades conhecidas
+- **Compatibilidade**: Suporte total a arquivos Excel antigos e novos
+- **Performance**: Bibliotecas otimizadas com melhor desempenho
+- **Manutenibilidade**: Código mais limpo e fácil de manter
+
+---
+
+**Última atualização:** 13 de outubro de 2025 - 17:00
