@@ -21,7 +21,7 @@
     "!src/index.ts"
   ],
   "setupFilesAfterEnv": [
-    "<rootDir>/src/tests/setup.ts"
+    "<rootDir>/jest.setup.ts"
   ],
   "testTimeout": 30000,
   "maxWorkers": 1,

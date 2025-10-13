@@ -1,5 +1,5 @@
-const pdf = require('pdf-parse');
 import * as fs from 'fs';
+import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { ParsedTransaction, ParseResult, ParseOptions } from './csvParser';
 
 /**
@@ -213,9 +213,19 @@ export class PDFParser {
 
         try {
             const buffer = fs.readFileSync(filePath);
-            const data = await pdf(buffer);
+            const doc = await getDocument({ data: buffer }).promise;
 
-            if (!data.text) {
+            let fullText = '';
+            for (let i = 1; i <= doc.numPages; i++) {
+                const page = await doc.getPage(i);
+                const textContent = await page.getTextContent();
+                const pageText = textContent.items
+                    .map((item: any) => item.str)
+                    .join(' ');
+                fullText += pageText + '\n';
+            }
+
+            if (!fullText.trim()) {
                 return {
                     transactions: [],
                     errors: ['Não foi possível extrair texto do PDF'],
@@ -223,7 +233,7 @@ export class PDFParser {
                 };
             }
 
-            const transactions = this.extractTransactions(data.text);
+            const transactions = this.extractTransactions(fullText);
 
             // Aplica filtro de data se especificado
             let filteredTransactions = transactions;

@@ -1,9 +1,9 @@
 import request from 'supertest';
 import app from '../index';
-import { prisma } from './setup';
+import { prisma } from '../../jest.setup';
 
 describe('🔐 Authentication API Tests', () => {
-  
+
   describe('POST /api/auth/login', () => {
     it('should login with valid credentials from seed data', async () => {
       const loginData = {
@@ -132,7 +132,7 @@ describe('🔐 Authentication API Tests', () => {
       const firstResponse = await request(app)
         .post('/api/auth/register')
         .send(userData);
-      
+
       expect(firstResponse.status).toBe(201);
 
       // Second registration with same email should fail

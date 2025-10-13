@@ -1,6 +1,6 @@
 import request from 'supertest';
 import app from '../index';
-import { prisma } from './setup';
+import { prisma } from '../../jest.setup';
 
 describe('🔧 Essential API Tests', () => {
   let authToken: string = '';
