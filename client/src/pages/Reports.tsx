@@ -19,6 +19,7 @@ interface CategoryData {
   name: string;
   value: number;
   percentage: number;
+  [key: string]: any; // Required for Recharts v3 compatibility
 }
 
 interface ExpensesByCategory {
@@ -72,10 +73,10 @@ export default function Reports() {
   const loadReports = async () => {
     try {
       setLoading(true);
-      const params = viewMode === 'monthly' 
+      const params = viewMode === 'monthly'
         ? { mode: 'monthly', month: selectedMonth }
         : { mode: 'period', period: selectedPeriod };
-      
+
       const budgetId = activeBudget?.budget?.id;
       const reportsData = await reportsService.getReports(params, budgetId);
       setData(reportsData);
@@ -129,7 +130,7 @@ export default function Reports() {
 
   return (
     <div className="space-y-6">
-      
+
       {/* Banner de acesso compartilhado */}
       {activeBudget && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -146,34 +147,32 @@ export default function Reports() {
           </div>
         </div>
       )}
-      
+
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 lg:gap-6">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Relatórios</h1>
           <p className="text-gray-600">Análise detalhada das suas finanças</p>
         </div>
-        
+
         <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4">
           {/* View Mode Toggle */}
           <div className="flex bg-gray-100 rounded-lg p-1">
             <button
               onClick={() => setViewMode('period')}
-              className={`px-3 md:px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                viewMode === 'period'
+              className={`px-3 md:px-4 py-2 rounded-md text-sm font-medium transition-colors ${viewMode === 'period'
                   ? 'bg-white text-blue-600 shadow-sm'
                   : 'text-gray-600 hover:text-gray-800'
-              }`}
+                }`}
             >
               Por Período
             </button>
             <button
               onClick={() => setViewMode('monthly')}
-              className={`px-3 md:px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                viewMode === 'monthly'
+              className={`px-3 md:px-4 py-2 rounded-md text-sm font-medium transition-colors ${viewMode === 'monthly'
                   ? 'bg-white text-blue-600 shadow-sm'
                   : 'text-gray-600 hover:text-gray-800'
-              }`}
+                }`}
             >
               Por Mês
             </button>
@@ -200,7 +199,7 @@ export default function Reports() {
               max={new Date().toISOString().slice(0, 7)}
             />
           )}
-          
+
           <div className="flex space-x-2">
             <button
               onClick={() => exportReport('pdf')}
@@ -225,33 +224,30 @@ export default function Reports() {
         <div className="flex flex-wrap tablet:flex-nowrap lg:justify-between tablet:justify-between justify-center overflow-x-auto border-b p-2 scrollbar-hide gap-2">
           <button
             onClick={() => setActiveReport('overview')}
-            className={`flex flex-col items-center justify-center px-3 py-3 font-medium rounded-lg transition-colors flex-shrink-0 min-w-[70px] tablet:flex-1 lg:flex-1 tablet:min-w-0 lg:min-w-0 ${
-              activeReport === 'overview'
+            className={`flex flex-col items-center justify-center px-3 py-3 font-medium rounded-lg transition-colors flex-shrink-0 min-w-[70px] tablet:flex-1 lg:flex-1 tablet:min-w-0 lg:min-w-0 ${activeReport === 'overview'
                 ? 'text-blue-600 bg-blue-50'
                 : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-            }`}
+              }`}
           >
             <BarChart3 className="w-5 h-5 tablet:w-6 tablet:h-6 mb-1" />
             <span className="text-xs text-center leading-tight">Visão<br />Geral</span>
           </button>
           <button
             onClick={() => setActiveReport('trends')}
-            className={`flex flex-col items-center justify-center px-3 py-3 font-medium rounded-lg transition-colors flex-shrink-0 min-w-[70px] tablet:flex-1 lg:flex-1 tablet:min-w-0 lg:min-w-0 ${
-              activeReport === 'trends'
+            className={`flex flex-col items-center justify-center px-3 py-3 font-medium rounded-lg transition-colors flex-shrink-0 min-w-[70px] tablet:flex-1 lg:flex-1 tablet:min-w-0 lg:min-w-0 ${activeReport === 'trends'
                 ? 'text-blue-600 bg-blue-50'
                 : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-            }`}
+              }`}
           >
             <TrendingUp className="w-5 h-5 tablet:w-6 tablet:h-6 mb-1" />
             <span className="text-xs text-center leading-tight">Tendências</span>
           </button>
           <button
             onClick={() => setActiveReport('categories')}
-            className={`flex flex-col items-center justify-center px-3 py-3 font-medium rounded-lg transition-colors flex-shrink-0 min-w-[70px] tablet:flex-1 lg:flex-1 tablet:min-w-0 lg:min-w-0 ${
-              activeReport === 'categories'
+            className={`flex flex-col items-center justify-center px-3 py-3 font-medium rounded-lg transition-colors flex-shrink-0 min-w-[70px] tablet:flex-1 lg:flex-1 tablet:min-w-0 lg:min-w-0 ${activeReport === 'categories'
                 ? 'text-blue-600 bg-blue-50'
                 : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-            }`}
+              }`}
           >
             <PieChartIcon className="w-5 h-5 tablet:w-6 tablet:h-6 mb-1" />
             <span className="text-xs text-center leading-tight">Categorias</span>
@@ -259,11 +255,10 @@ export default function Reports() {
           {viewMode === 'monthly' && (
             <button
               onClick={() => setActiveReport('daily')}
-              className={`flex flex-col items-center justify-center px-3 py-3 font-medium rounded-lg transition-colors flex-shrink-0 min-w-[70px] tablet:flex-1 lg:flex-1 tablet:min-w-0 lg:min-w-0 ${
-                activeReport === 'daily'
+              className={`flex flex-col items-center justify-center px-3 py-3 font-medium rounded-lg transition-colors flex-shrink-0 min-w-[70px] tablet:flex-1 lg:flex-1 tablet:min-w-0 lg:min-w-0 ${activeReport === 'daily'
                   ? 'text-blue-600 bg-blue-50'
                   : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-              }`}
+                }`}
             >
               <Calendar className="w-5 h-5 tablet:w-6 tablet:h-6 mb-1" />
               <span className="text-xs text-center leading-tight">Detalhes<br />Diários</span>
@@ -271,44 +266,40 @@ export default function Reports() {
           )}
           <button
             onClick={() => setActiveReport('budget')}
-            className={`flex flex-col items-center justify-center px-3 py-3 font-medium rounded-lg transition-colors flex-shrink-0 min-w-[70px] tablet:flex-1 lg:flex-1 tablet:min-w-0 lg:min-w-0 ${
-              activeReport === 'budget'
+            className={`flex flex-col items-center justify-center px-3 py-3 font-medium rounded-lg transition-colors flex-shrink-0 min-w-[70px] tablet:flex-1 lg:flex-1 tablet:min-w-0 lg:min-w-0 ${activeReport === 'budget'
                 ? 'text-blue-600 bg-blue-50'
                 : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-            }`}
+              }`}
           >
             <Target className="w-5 h-5 tablet:w-6 tablet:h-6 mb-1" />
             <span className="text-xs text-center leading-tight">Orçamento</span>
           </button>
           <button
             onClick={() => setActiveReport('comparison')}
-            className={`flex flex-col items-center justify-center px-3 py-3 font-medium rounded-lg transition-colors flex-shrink-0 min-w-[70px] tablet:flex-1 lg:flex-1 tablet:min-w-0 lg:min-w-0 ${
-              activeReport === 'comparison'
+            className={`flex flex-col items-center justify-center px-3 py-3 font-medium rounded-lg transition-colors flex-shrink-0 min-w-[70px] tablet:flex-1 lg:flex-1 tablet:min-w-0 lg:min-w-0 ${activeReport === 'comparison'
                 ? 'text-blue-600 bg-blue-50'
                 : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-            }`}
+              }`}
           >
             <GitCompare className="w-5 h-5 tablet:w-6 tablet:h-6 mb-1" />
             <span className="text-xs text-center leading-tight">Comparação</span>
           </button>
           <button
             onClick={() => setActiveReport('forecast')}
-            className={`flex flex-col items-center justify-center px-3 py-3 font-medium rounded-lg transition-colors flex-shrink-0 min-w-[70px] tablet:flex-1 lg:flex-1 tablet:min-w-0 lg:min-w-0 ${
-              activeReport === 'forecast'
+            className={`flex flex-col items-center justify-center px-3 py-3 font-medium rounded-lg transition-colors flex-shrink-0 min-w-[70px] tablet:flex-1 lg:flex-1 tablet:min-w-0 lg:min-w-0 ${activeReport === 'forecast'
                 ? 'text-blue-600 bg-blue-50'
                 : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-            }`}
+              }`}
           >
             <Activity className="w-5 h-5 tablet:w-6 tablet:h-6 mb-1" />
             <span className="text-xs text-center leading-tight">Previsões</span>
           </button>
           <button
             onClick={() => setActiveReport('detailed')}
-            className={`flex flex-col items-center justify-center px-3 py-3 font-medium rounded-lg transition-colors flex-shrink-0 min-w-[70px] tablet:flex-1 lg:flex-1 tablet:min-w-0 lg:min-w-0 ${
-              activeReport === 'detailed'
+            className={`flex flex-col items-center justify-center px-3 py-3 font-medium rounded-lg transition-colors flex-shrink-0 min-w-[70px] tablet:flex-1 lg:flex-1 tablet:min-w-0 lg:min-w-0 ${activeReport === 'detailed'
                 ? 'text-blue-600 bg-blue-50'
                 : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-            }`}
+              }`}
           >
             <FileText className="w-5 h-5 tablet:w-6 tablet:h-6 mb-1" />
             <span className="text-xs text-center leading-tight">Detalhado</span>
@@ -485,7 +476,7 @@ export default function Reports() {
                   </div>
                 </div>
               </div>
-              
+
               {/* Expenses by Category for Monthly */}
               <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border">
                 <h3 className="text-lg font-semibold mb-4">Despesas por Categoria</h3>
@@ -569,10 +560,10 @@ export default function Reports() {
                       <XAxis dataKey="month" />
                       <YAxis tickFormatter={(value) => formatCurrency(value)} />
                       <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                      <Line 
-                        type="monotone" 
-                        dataKey="balance" 
-                        stroke="#3B82F6" 
+                      <Line
+                        type="monotone"
+                        dataKey="balance"
+                        stroke="#3B82F6"
                         strokeWidth={3}
                         name="Saldo"
                       />
@@ -665,29 +656,29 @@ export default function Reports() {
       )}
 
       {activeReport === 'budget' && (
-        <BudgetAnalysis 
-          period={viewMode === 'monthly' ? selectedMonth : selectedPeriod} 
+        <BudgetAnalysis
+          period={viewMode === 'monthly' ? selectedMonth : selectedPeriod}
           budgetId={activeBudget?.budget?.id}
         />
       )}
 
       {activeReport === 'comparison' && (
-        <PerformanceComparison 
-          selectedPeriod={viewMode === 'monthly' ? selectedMonth : selectedPeriod} 
+        <PerformanceComparison
+          selectedPeriod={viewMode === 'monthly' ? selectedMonth : selectedPeriod}
           budgetId={activeBudget?.budget?.id}
         />
       )}
 
       {activeReport === 'forecast' && (
-        <FinancialForecast 
-          period={viewMode === 'monthly' ? selectedMonth : selectedPeriod} 
+        <FinancialForecast
+          period={viewMode === 'monthly' ? selectedMonth : selectedPeriod}
           budgetId={activeBudget?.budget?.id}
         />
       )}
 
       {activeReport === 'daily' && viewMode === 'monthly' && (
-        <MonthlyDetail 
-          selectedMonth={selectedMonth} 
+        <MonthlyDetail
+          selectedMonth={selectedMonth}
           budgetId={activeBudget?.budget?.id}
         />
       )}
