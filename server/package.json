@@ -19,6 +19,7 @@
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "prisma:reset": "prisma migrate reset",
+    "seed": "ts-node src/utils/seed.ts",
     "railway:build": "npm ci && npm run prisma:generate && npm run build",
     "railway:start": "npm run prisma:migrate:deploy && npm start"
   },
