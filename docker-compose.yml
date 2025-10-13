@@ -20,6 +20,7 @@ services:
       context: ./server
       dockerfile: Dockerfile
     container_name: budget_server
+    command: ["npm", "run", "dev:watch"]
     environment:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://budget_user:budget_password@db:5432/budget_db
@@ -44,7 +45,6 @@ services:
           memory: 2G
         reservations:
           memory: 1G
-    command: npm run dev
 
   client:
     build:

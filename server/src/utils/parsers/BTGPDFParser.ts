@@ -1,5 +1,5 @@
 import * as fs from 'fs';
-const pdf = require('pdf-parse');
+import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { BankParser, ParseResult, ParseOptions } from './BankParser';
 import { ParsedTransaction } from '../csvParser';
 
@@ -30,8 +30,19 @@ export class BTGPDFParser extends BankParser {
             console.log('🏦 BTG PDF: Processando arquivo PDF');
 
             const buffer = fs.readFileSync(filePath);
-            const pdfData = await pdf(buffer);
-            const lines = pdfData.text.split('\n');
+            const doc = await getDocument({ data: buffer }).promise;
+
+            let fullText = '';
+            for (let i = 1; i <= doc.numPages; i++) {
+                const page = await doc.getPage(i);
+                const textContent = await page.getTextContent();
+                const pageText = textContent.items
+                    .map((item: any) => item.str)
+                    .join(' ');
+                fullText += pageText + '\n';
+            }
+
+            const lines = fullText.split('\n');
 
             const accountType = this.detectAccountTypeFromFile(filePath);
 
