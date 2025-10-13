@@ -2,7 +2,7 @@
 builder = "nixpacks"
 
 [deploy]
-startCommand = "cd server && npm run railway:start"
+startCommand = "cd server && npm run railway:full"
 healthcheckPath = "/health"
 healthcheckTimeout = 300
 
