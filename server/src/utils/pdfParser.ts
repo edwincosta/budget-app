@@ -1,12 +1,25 @@
 import * as fs from 'fs';
-const pdfParse = require('pdf-parse');
 import { ParsedTransaction, ParseResult, ParseOptions } from './csvParser';
+
+type PdfJsModule = typeof import('pdfjs-dist/legacy/build/pdf.mjs');
 
 /**
  * Parser para arquivos PDF de extratos bancários
  * Suporta formatos comuns de faturas de cartão e extratos
  */
 export class PDFParser {
+
+    private static pdfjsModulePromise: Promise<PdfJsModule> | null = null;
+
+    /**
+     * Carrega módulo pdfjs-dist usando import dinâmico nativo (ESM)
+     */
+    private static async loadPdfJsModule(): Promise<PdfJsModule> {
+        if (!this.pdfjsModulePromise) {
+            this.pdfjsModulePromise = (new Function('return import("pdfjs-dist/legacy/build/pdf.mjs")'))() as Promise<PdfJsModule>;
+        }
+        return this.pdfjsModulePromise;
+    }
 
     /**
      * Extrai transações de texto de PDF baseado em padrões regex
@@ -213,8 +226,18 @@ export class PDFParser {
 
         try {
             const buffer = fs.readFileSync(filePath);
-            const data = await pdfParse(buffer);
-            const fullText = data.text;
+            const pdfjs = await this.loadPdfJsModule();
+            const doc = await pdfjs.getDocument({ data: buffer }).promise;
+
+            let fullText = '';
+            for (let i = 1; i <= doc.numPages; i++) {
+                const page = await doc.getPage(i);
+                const textContent = await page.getTextContent();
+                const pageText = textContent.items
+                    .map((item: any) => item.str)
+                    .join(' ');
+                fullText += pageText + '\n';
+            }
 
             if (!fullText.trim()) {
                 return {
