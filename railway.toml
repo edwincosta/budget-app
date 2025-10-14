@@ -1,10 +1,12 @@
 [build]
-builder = "nixpacks"
+builder = "railpack"
 
 [deploy]
 startCommand = "cd server && npm run railway:full"
 healthcheckPath = "/health"
 healthcheckTimeout = 300
+restartPolicyType = "on-failure"
+restartPolicyMaxRetries = 10
 
 [env]
 NODE_ENV = "production"
@@ -14,3 +16,4 @@ RATE_LIMIT_WINDOW_MS = 900000
 RATE_LIMIT_MAX_REQUESTS = 100
 MAX_FILE_SIZE = 10485760
 UPLOAD_DIR = "uploads"
+REBUILD_TRIGGER = "1"
