@@ -1,7 +1,7 @@
 import * as fs from 'fs';
-import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { BankParser, ParseResult, ParseOptions } from './BankParser';
 import { ParsedTransaction } from '../csvParser';
+import { loadPdfJsModule } from '../pdfjsLoader';
 
 /**
  * Parser específico para arquivos PDF do BTG Pactual
@@ -30,7 +30,8 @@ export class BTGPDFParser extends BankParser {
             console.log('🏦 BTG PDF: Processando arquivo PDF');
 
             const buffer = fs.readFileSync(filePath);
-            const doc = await getDocument({ data: buffer }).promise;
+            const pdfjs = await loadPdfJsModule();
+            const doc = await pdfjs.getDocument({ data: buffer }).promise;
 
             let fullText = '';
             for (let i = 1; i <= doc.numPages; i++) {
