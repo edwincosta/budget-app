@@ -74,5 +74,9 @@
     "jwt"
   ],
   "author": "Your Name",
-  "license": "MIT"
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.11.1 <23",
+    "npm": ">=9.0.0"
+  }
 }
