@@ -1,12 +1,14 @@
-# 🚀 Deploy no Railway - Guia Passo a Passo
+# 🚀 Deploy no Railway - Guia Passo a Passo (Railpack)
 
 ## ✅ Preparação Concluída!
 
-Seu projeto está 100% preparado para deploy no Railway:
+Seu projeto está 100% preparado para deploy no Railway com **Railpack**:
 - ✅ Build de produção executado
 - ✅ Railway CLI instalado
-- ✅ Configurações otimizadas
+- ✅ Configurações otimizadas para Railpack
 - ✅ Scripts de deploy configurados
+- ✅ Cache control configurado via `REBUILD_TRIGGER`
+- ✅ Biblioteca PDF compatível (`pdf-parse`)
 
 ## 🎯 Opção 1: Deploy via GitHub (Recomendado)
 
@@ -29,7 +31,7 @@ git push origin main
 3. **Clique em "New Project"**
 4. **Selecione "Deploy from GitHub repo"**
 5. **Escolha seu repositório**: `edwincosta/budget-app`
-6. **Selecione a branch** (main ou upgrade-lib)
+6. **Railway detectará automaticamente** o `railway.toml` e usará **Railpack**
 
 ### Passo 3: Configurar Serviços
 O Railway irá detectar automaticamente e criar:
@@ -59,9 +61,14 @@ RATE_LIMIT_MAX_REQUESTS=100
 # Upload Settings
 MAX_FILE_SIZE=10485760
 UPLOAD_DIR=uploads
+
+# Cache Control (mude para forçar rebuild)
+REBUILD_TRIGGER=1
 ```
 
-**⚠️ IMPORTANTE**: `DATABASE_URL` será automaticamente configurada pelo PostgreSQL addon.
+**⚠️ IMPORTANTE**: 
+- `DATABASE_URL` será automaticamente configurada pelo PostgreSQL addon
+- **NUNCA** use o JWT_SECRET de exemplo acima - gere um novo!
 
 ## 🚀 Opção 2: Deploy via Railway CLI
 
@@ -79,13 +86,32 @@ railway add --database postgresql
 railway up
 ```
 
-## 🔧 Configurações Automáticas
+## 🔧 Railpack: Configuração Automática
 
-O Railway usará automaticamente:
-- **Build Command**: `cd server && npm run railway:build`
-- **Start Command**: `cd server && npm run railway:start`
-- **Health Check**: `/health`
-- **Port**: `$PORT` (automático)
+O Railway com **Railpack** detecta automaticamente:
+- ✅ **Node.js 20** (via `package.json`)
+- ✅ **Workspace monorepo** (client + server)
+- ✅ **Build Command**: `cd server && npm ci && npm run railway:build`
+- ✅ **Start Command**: `cd server && npm run railway:start`
+- ✅ **Health Check**: `/health`
+- ✅ **Port**: `$PORT` (automático)
+- ✅ **Prisma**: Migrations automáticas no start
+
+## 🔄 Como Forçar Rebuild no Railway
+
+### Método 1: Variável de Ambiente (Mais Fácil) ⭐
+1. Railway Dashboard → **Variables**
+2. Mude `REBUILD_TRIGGER=1` para `REBUILD_TRIGGER=2`
+3. Salvar → Deploy automático com cache limpo
+
+### Método 2: Via Dashboard
+1. **Deployments** → Clique nos 3 pontos (`...`)
+2. **"Redeploy with cleared build cache"**
+
+### Método 3: Via CLI
+```bash
+railway up --no-cache
+```
 
 ## ✅ Verificações Pós-Deploy
 
@@ -93,11 +119,55 @@ O Railway usará automaticamente:
 2. **Frontend**: https://seu-app.railway.app
 3. **API**: https://seu-app.railway.app/api/auth/status
 
-## 🎯 Próximos Passos
+## � Troubleshooting
 
-1. **Atualize CORS_ORIGIN** com sua URL final do Railway
-2. **Configure domínio customizado** (opcional)
-3. **Monitore logs** via Railway Dashboard
+### Problema: Build failure
+```bash
+# Teste localmente primeiro
+cd server
+npm ci
+npm run railway:build
+npm run railway:start
+```
+
+### Problema: Migrations não rodaram
+```bash
+# Rode manualmente
+railway run npx prisma migrate deploy
+```
+
+### Problema: Cache desatualizado (biblioteca antiga)
+1. Mude `REBUILD_TRIGGER=2` nas variáveis do Railway
+2. Ou use: `railway up --no-cache`
+
+### Problema: Erro ERR_REQUIRE_ESM
+✅ **Resolvido!** Agora usamos `pdf-parse` (compatível com CommonJS)
+
+## 🎯 Checklist Final
+
+- [ ] PostgreSQL addon adicionado
+- [ ] `JWT_SECRET` gerado e configurado (mínimo 32 caracteres)
+- [ ] `REBUILD_TRIGGER=1` configurado
+- [ ] Todas as variáveis de ambiente configuradas
+- [ ] Health check respondendo (`/health`)
+- [ ] Frontend carregando
+- [ ] API funcionando
+- [ ] Migrations executadas
+- [ ] CORS configurado corretamente
+- [ ] Logs sem erros
+
+## 🚀 Deploy Contínuo
+
+Após o setup inicial, todo `git push` na branch main dispara:
+1. ✅ Railway detecta commit
+2. ✅ Railpack faz build otimizado
+3. ✅ Migrations rodam automaticamente
+4. ✅ Health check valida deploy
+5. ✅ Tráfego migrado automaticamente
+
+---
+
+**🎉 Seu Budget App está rodando em produção com Railpack!**
 4. **Configure backups** do PostgreSQL
 
 ## 🆘 Troubleshooting
