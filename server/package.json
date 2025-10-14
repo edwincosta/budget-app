@@ -47,7 +47,7 @@
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
     "node-xlsx": "^0.24.0",
-    "pdf-parse": "^2.3.0",
+    "pdfjs-dist": "^5.4.296",
     "prisma": "^6.17.1"
   },
   "devDependencies": {
@@ -58,7 +58,6 @@
     "@types/jest": "^30.0.0",
     "@types/jsonwebtoken": "^9.0.2",
     "@types/node": "^20.19.21",
-    "@types/pdf-parse": "^1.1.5",
     "@types/supertest": "^6.0.3",
     "jest": "^30.2.0",
     "nodemon": "^3.0.1",
