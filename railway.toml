@@ -5,8 +5,6 @@ builder = "railpack"
 startCommand = "cd server && npm run railway:full"
 healthcheckPath = "/health"
 healthcheckTimeout = 300
-restartPolicyType = "on-failure"
-restartPolicyMaxRetries = 10
 
 [env]
 NODE_ENV = "production"
