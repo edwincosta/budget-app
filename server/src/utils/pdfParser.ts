@@ -1,5 +1,5 @@
 import * as fs from 'fs';
-import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
+import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { ParsedTransaction, ParseResult, ParseOptions } from './csvParser';
 
 /**
@@ -213,7 +213,7 @@ export class PDFParser {
 
         try {
             const buffer = fs.readFileSync(filePath);
-            const doc = await getDocument({ data: buffer }).promise;
+            const doc = await pdfjs.getDocument({ data: buffer }).promise;
 
             let fullText = '';
             for (let i = 1; i <= doc.numPages; i++) {
