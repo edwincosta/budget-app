@@ -12,6 +12,7 @@
     "start:client": "cd client && npm run preview",
     "start:server": "cd server && npm start",
     "start:production": "cd server && npm start",
+    "railway:full": "npm run build:production && cd server && npm run prisma:migrate:deploy && npm start",
     "docker:up": "docker-compose up --build",
     "docker:down": "docker-compose down",
     "docker:production": "docker build -f Dockerfile.production -t budget-app:latest .",
