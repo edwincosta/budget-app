@@ -1,123 +1,144 @@
-import { useState, useEffect } from 'react'
-import { Plus, Edit, Trash2, Save, X, Target, DollarSign, Calendar, Users } from 'lucide-react'
-import { budgetService, categoryService } from '@/services/api'
-import { Budget, Category } from '@/types'
-import { useBudget } from '@/contexts/BudgetContext'
+import { useState, useEffect } from "react";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Save,
+  X,
+  Target,
+  DollarSign,
+  Calendar,
+  Users,
+} from "lucide-react";
+import { budgetService, categoryService } from "@/services/api";
+import { Budget, Category } from "@/types";
+import { useBudget } from "@/contexts/BudgetContext";
 
 export default function Budgets() {
   const { activeBudget, isOwner } = useBudget();
-  const [budgets, setBudgets] = useState<Budget[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
-  const [loading, setLoading] = useState(true)
-  const [editingBudget, setEditingBudget] = useState<string | null>(null)
-  const [isCreating, setIsCreating] = useState(false)
+  const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editingBudget, setEditingBudget] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
   const [newBudget, setNewBudget] = useState({
-    categoryId: '',
-    amount: '',
-    period: 'MONTHLY' as 'MONTHLY' | 'QUARTERLY' | 'YEARLY'
-  })
+    categoryId: "",
+    amount: "",
+    period: "MONTHLY" as "MONTHLY" | "QUARTERLY" | "YEARLY",
+  });
 
   // Carregar orçamentos e categorias
   useEffect(() => {
-    loadData()
-  }, [activeBudget])
+    loadData();
+  }, [activeBudget]);
 
   const loadData = async () => {
     try {
-      setLoading(true)
-      const budgetId = activeBudget?.budget?.id;
+      setLoading(true);
+      // Para orçamento próprio, activeBudget é null, então budgetId será undefined
+      // Para orçamento compartilhado, usar activeBudget.budgetId
+      const budgetId = activeBudget?.budgetId;
       const [budgetsData, categoriesData] = await Promise.all([
         budgetService.getBudgets(budgetId),
-        categoryService.getCategories(budgetId)
-      ])
-      
-      setBudgets(budgetsData)
-      setCategories(categoriesData.filter((cat: Category) => cat.type === 'EXPENSE'))
+        categoryService.getCategories(budgetId),
+      ]);
+
+      setBudgets(budgetsData);
+      setCategories(
+        categoriesData.filter((cat: Category) => cat.type === "EXPENSE")
+      );
     } catch (error) {
-      console.error('Erro ao carregar dados:', error)
-      alert('Erro ao carregar dados')
+      console.error("Erro ao carregar dados:", error);
+      alert("Erro ao carregar dados");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleCreateBudget = async () => {
     if (!newBudget.categoryId || !newBudget.amount) {
-      alert('Preencha todos os campos obrigatórios')
-      return
+      alert("Preencha todos os campos obrigatórios");
+      return;
     }
 
     try {
-      const budgetId = activeBudget?.budget?.id;
-      await budgetService.createBudget({
-        categoryId: newBudget.categoryId,
-        amount: parseFloat(newBudget.amount),
-        period: newBudget.period,
-        isActive: true
-      }, budgetId)
-      
-      setNewBudget({ categoryId: '', amount: '', period: 'MONTHLY' })
-      setIsCreating(false)
-      loadData()
-    } catch (error) {
-      console.error('Erro ao criar orçamento:', error)
-      alert('Erro ao criar orçamento')
-    }
-  }
+      const budgetId = activeBudget?.budgetId;
+      await budgetService.createBudget(
+        {
+          categoryId: newBudget.categoryId,
+          amount: parseFloat(newBudget.amount),
+          period: newBudget.period,
+          isActive: true,
+        },
+        budgetId
+      );
 
-  const handleEditBudget = async (budgetId: string, updates: Partial<Budget>) => {
-    try {
-      const activeBudgetId = activeBudget?.budget?.id;
-      await budgetService.updateBudget(budgetId, updates, activeBudgetId)
-      setEditingBudget(null)
-      loadData()
+      setNewBudget({ categoryId: "", amount: "", period: "MONTHLY" });
+      setIsCreating(false);
+      loadData();
     } catch (error) {
-      console.error('Erro ao atualizar orçamento:', error)
-      alert('Erro ao atualizar orçamento')
+      console.error("Erro ao criar orçamento:", error);
+      alert("Erro ao criar orçamento");
     }
-  }
+  };
+
+  const handleEditBudget = async (
+    budgetId: string,
+    updates: Partial<Budget>
+  ) => {
+    try {
+      const activeBudgetId = activeBudget?.budgetId;
+      await budgetService.updateBudget(budgetId, updates, activeBudgetId);
+      setEditingBudget(null);
+      loadData();
+    } catch (error) {
+      console.error("Erro ao atualizar orçamento:", error);
+      alert("Erro ao atualizar orçamento");
+    }
+  };
 
   const handleDeleteBudget = async (budgetId: string) => {
-    if (!confirm('Tem certeza que deseja excluir este orçamento?')) {
-      return
+    if (!confirm("Tem certeza que deseja excluir este orçamento?")) {
+      return;
     }
 
     try {
-      const activeBudgetId = activeBudget?.budget?.id;
-      await budgetService.deleteBudget(budgetId, activeBudgetId)
-      loadData()
+      const activeBudgetId = activeBudget?.budgetId;
+      await budgetService.deleteBudget(budgetId, activeBudgetId);
+      loadData();
     } catch (error) {
-      console.error('Erro ao excluir orçamento:', error)
-      alert('Erro ao excluir orçamento')
+      console.error("Erro ao excluir orçamento:", error);
+      alert("Erro ao excluir orçamento");
     }
-  }
+  };
 
   const formatAmount = (amount: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(amount)
-  }
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(amount);
+  };
 
   const formatPeriod = (period: string) => {
     const periods = {
-      MONTHLY: 'Mensal',
-      QUARTERLY: 'Trimestral',
-      YEARLY: 'Anual'
-    }
-    return periods[period as keyof typeof periods] || period
-  }
+      MONTHLY: "Mensal",
+      QUARTERLY: "Trimestral",
+      YEARLY: "Anual",
+    };
+    return periods[period as keyof typeof periods] || period;
+  };
 
-  const availableCategories = categories.filter(cat => 
-    !budgets.some(budget => budget.categoryId === cat.id && budget.isActive)
-  )
+  const availableCategories = categories.filter(
+    (cat) =>
+      !budgets.some((budget) => budget.categoryId === cat.id && budget.isActive)
+  );
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
       </div>
-    )
+    );
   }
 
   return (
@@ -132,29 +153,51 @@ export default function Budgets() {
                 Visualizando: {activeBudget.budget?.name}
               </h3>
               <p className="text-sm text-blue-600">
-                Orçamento compartilhado por {activeBudget.budget?.owner?.name} • Permissão: {activeBudget.permission === 'READ' ? 'Visualização' : 'Edição'}
+                Orçamento compartilhado por {activeBudget.budget?.owner?.name} •
+                Permissão:{" "}
+                {activeBudget.permission === "READ" ? "Visualização" : "Edição"}
               </p>
             </div>
           </div>
         </div>
       )}
-      
+
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 lg:gap-6">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Orçamentos</h1>
-          <p className="text-gray-600">Defina e gerencie seus orçamentos por categoria</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+            Orçamentos
+          </h1>
+          <p className="text-gray-600">
+            Defina e gerencie seus orçamentos por categoria
+          </p>
         </div>
-        
-        {(isOwner || activeBudget?.permission === 'WRITE') && (
-          <button
-            onClick={() => setIsCreating(true)}
-            disabled={availableCategories.length === 0}
-            className="bg-blue-600 text-white px-4 py-2 md:py-3 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed w-full lg:w-auto"
-          >
-            <Plus className="w-4 h-4" />
-            Novo Orçamento
-          </button>
+
+        {(isOwner || activeBudget?.permission === "WRITE") && (
+          <div className="w-full lg:w-auto">
+            {availableCategories.length === 0 ? (
+              <div className="relative">
+                <button
+                  disabled
+                  className="bg-gray-400 text-white px-4 py-2 md:py-3 rounded-lg flex items-center justify-center gap-2 cursor-not-allowed w-full lg:w-auto opacity-50"
+                >
+                  <Plus className="w-4 h-4" />
+                  Novo Orçamento
+                </button>
+                <div className="absolute top-full left-0 mt-1 text-xs text-gray-600 bg-white p-2 rounded shadow-sm border w-full lg:w-64">
+                  ⚠️ Crie categorias primeiro para poder criar orçamentos
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => setIsCreating(true)}
+                className="bg-blue-600 text-white px-4 py-2 md:py-3 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 w-full lg:w-auto"
+              >
+                <Plus className="w-4 h-4" />
+                Novo Orçamento
+              </button>
+            )}
+          </div>
         )}
       </div>
 
@@ -192,7 +235,11 @@ export default function Budgets() {
                     Orçamento Total Mensal
                   </dt>
                   <dd className="text-lg font-medium text-gray-900">
-                    {formatAmount(budgets.filter(b => b.period === 'MONTHLY' && b.isActive).reduce((sum, b) => sum + b.amount, 0))}
+                    {formatAmount(
+                      budgets
+                        .filter((b) => b.period === "MONTHLY" && b.isActive)
+                        .reduce((sum, b) => sum + b.amount, 0)
+                    )}
                   </dd>
                 </dl>
               </div>
@@ -212,7 +259,7 @@ export default function Budgets() {
                     Orçamentos Ativos
                   </dt>
                   <dd className="text-lg font-medium text-gray-900">
-                    {budgets.filter(b => b.isActive).length}
+                    {budgets.filter((b) => b.isActive).length}
                   </dd>
                 </dl>
               </div>
@@ -224,63 +271,115 @@ export default function Budgets() {
       {/* Create Budget Form */}
       {isCreating && (
         <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm border">
-          <h2 className="text-lg md:text-xl font-semibold text-gray-900 mb-4 md:mb-6">Novo Orçamento</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Categoria
-              </label>
-              <select
-                value={newBudget.categoryId}
-                onChange={(e) => setNewBudget({ ...newBudget, categoryId: e.target.value })}
-                className="w-full px-3 py-2 md:py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Selecione uma categoria</option>
-                {availableCategories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <h2 className="text-lg md:text-xl font-semibold text-gray-900 mb-4 md:mb-6">
+            Novo Orçamento
+          </h2>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Valor
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={newBudget.amount}
-                onChange={(e) => setNewBudget({ ...newBudget, amount: e.target.value })}
-                placeholder="0,00"
-                className="w-full px-3 py-2 md:py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+          {availableCategories.length === 0 ? (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-4">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg
+                    className="h-5 w-5 text-yellow-400"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-yellow-800">
+                    Categorias necessárias
+                  </h3>
+                  <div className="mt-2 text-sm text-yellow-700">
+                    <p>
+                      Para criar um orçamento, você precisa ter pelo menos uma
+                      categoria.
+                    </p>
+                    <p className="mt-1">
+                      <a
+                        href="/categories"
+                        className="font-medium text-yellow-800 underline hover:text-yellow-600"
+                      >
+                        Clique aqui para criar suas categorias
+                      </a>{" "}
+                      primeiro.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+              {/* Campos do formulário */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Categoria
+                </label>
+                <select
+                  value={newBudget.categoryId}
+                  onChange={(e) =>
+                    setNewBudget({ ...newBudget, categoryId: e.target.value })
+                  }
+                  className="w-full px-3 py-2 md:py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Selecione uma categoria</option>
+                  {availableCategories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Período
-              </label>
-              <select
-                value={newBudget.period}
-                onChange={(e) => setNewBudget({ ...newBudget, period: e.target.value as any })}
-                className="w-full px-3 py-2 md:py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="MONTHLY">Mensal</option>
-                <option value="QUARTERLY">Trimestral</option>
-                <option value="YEARLY">Anual</option>
-              </select>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Valor
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={newBudget.amount}
+                  onChange={(e) =>
+                    setNewBudget({ ...newBudget, amount: e.target.value })
+                  }
+                  placeholder="0,00"
+                  className="w-full px-3 py-2 md:py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Período
+                </label>
+                <select
+                  value={newBudget.period}
+                  onChange={(e) =>
+                    setNewBudget({
+                      ...newBudget,
+                      period: e.target.value as any,
+                    })
+                  }
+                  className="w-full px-3 py-2 md:py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="MONTHLY">Mensal</option>
+                  <option value="QUARTERLY">Trimestral</option>
+                  <option value="YEARLY">Anual</option>
+                </select>
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="flex flex-col md:flex-row justify-end gap-4 mt-6">
             <button
               onClick={() => {
-                setIsCreating(false)
-                setNewBudget({ categoryId: '', amount: '', period: 'MONTHLY' })
+                setIsCreating(false);
+                setNewBudget({ categoryId: "", amount: "", period: "MONTHLY" });
               }}
               className="px-4 py-2 md:py-3 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 order-2 md:order-1"
             >
@@ -288,7 +387,8 @@ export default function Budgets() {
             </button>
             <button
               onClick={handleCreateBudget}
-              className="px-4 py-2 md:py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 order-1 md:order-2"
+              disabled={availableCategories.length === 0}
+              className="px-4 py-2 md:py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed order-1 md:order-2"
             >
               Criar Orçamento
             </button>
@@ -301,15 +401,70 @@ export default function Budgets() {
         {budgets.length === 0 ? (
           <div className="p-6 md:p-12 text-center">
             <Target className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum orçamento encontrado</h3>
-            <p className="text-gray-600 mb-6">Comece criando seu primeiro orçamento por categoria.</p>
-            <button
-              onClick={() => setIsCreating(true)}
-              disabled={availableCategories.length === 0}
-              className="bg-blue-600 text-white px-4 py-2 md:py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Criar Primeiro Orçamento
-            </button>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              Nenhum orçamento encontrado
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Comece criando seu primeiro orçamento por categoria.
+            </p>
+            {availableCategories.length === 0 ? (
+              <div className="space-y-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-4">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <svg
+                        className="h-5 w-5 text-blue-400"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-blue-800">
+                        Primeiro, crie suas categorias
+                      </h3>
+                      <div className="mt-2 text-sm text-blue-700">
+                        <p>
+                          Você precisa ter categorias para criar orçamentos.
+                          Categorias organizam seus gastos e receitas.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <a
+                  href="/categories"
+                  className="inline-flex items-center px-4 py-2 md:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                >
+                  <svg
+                    className="w-5 h-5 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                    />
+                  </svg>
+                  Criar Categorias
+                </a>
+              </div>
+            ) : (
+              <button
+                onClick={() => setIsCreating(true)}
+                className="bg-blue-600 text-white px-4 py-2 md:py-3 rounded-lg hover:bg-blue-700"
+              >
+                Criar Primeiro Orçamento
+              </button>
+            )}
           </div>
         ) : (
           <>
@@ -373,48 +528,48 @@ export default function Budgets() {
         )}
       </div>
     </div>
-  )
+  );
 }
 
 interface BudgetRowProps {
-  budget: Budget
-  isEditing: boolean
-  onEdit: () => void
-  onCancel: () => void
-  onSave: (updates: Partial<Budget>) => void
-  onDelete: () => void
-  formatAmount: (amount: number) => string
-  formatPeriod: (period: string) => string
+  budget: Budget;
+  isEditing: boolean;
+  onEdit: () => void;
+  onCancel: () => void;
+  onSave: (updates: Partial<Budget>) => void;
+  onDelete: () => void;
+  formatAmount: (amount: number) => string;
+  formatPeriod: (period: string) => string;
 }
 
-function BudgetRow({ 
-  budget, 
-  isEditing, 
-  onEdit, 
-  onCancel, 
-  onSave, 
-  onDelete, 
-  formatAmount, 
-  formatPeriod 
+function BudgetRow({
+  budget,
+  isEditing,
+  onEdit,
+  onCancel,
+  onSave,
+  onDelete,
+  formatAmount,
+  formatPeriod,
 }: BudgetRowProps) {
   const [editData, setEditData] = useState({
     amount: budget.amount.toString(),
     period: budget.period,
-    isActive: budget.isActive
-  })
+    isActive: budget.isActive,
+  });
 
   const handleSave = () => {
     if (!editData.amount) {
-      alert('Valor é obrigatório')
-      return
+      alert("Valor é obrigatório");
+      return;
     }
 
     onSave({
       amount: parseFloat(editData.amount),
       period: editData.period,
-      isActive: editData.isActive
-    })
-  }
+      isActive: editData.isActive,
+    });
+  };
 
   if (isEditing) {
     return (
@@ -436,14 +591,18 @@ function BudgetRow({
             step="0.01"
             min="0"
             value={editData.amount}
-            onChange={(e) => setEditData({ ...editData, amount: e.target.value })}
+            onChange={(e) =>
+              setEditData({ ...editData, amount: e.target.value })
+            }
             className="w-full px-2 py-1 md:py-2 border border-gray-300 rounded text-sm"
           />
         </td>
         <td className="px-4 md:px-6 py-4 whitespace-nowrap">
           <select
             value={editData.period}
-            onChange={(e) => setEditData({ ...editData, period: e.target.value as any })}
+            onChange={(e) =>
+              setEditData({ ...editData, period: e.target.value as any })
+            }
             className="w-full px-2 py-1 md:py-2 border border-gray-300 rounded text-sm"
           >
             <option value="MONTHLY">Mensal</option>
@@ -456,7 +615,9 @@ function BudgetRow({
             <input
               type="checkbox"
               checked={editData.isActive}
-              onChange={(e) => setEditData({ ...editData, isActive: e.target.checked })}
+              onChange={(e) =>
+                setEditData({ ...editData, isActive: e.target.checked })
+              }
               className="mr-2"
             />
             <span className="text-sm text-gray-900">Ativo</span>
@@ -479,7 +640,7 @@ function BudgetRow({
           </button>
         </td>
       </tr>
-    )
+    );
   }
 
   return (
@@ -502,12 +663,14 @@ function BudgetRow({
         {formatPeriod(budget.period)}
       </td>
       <td className="px-4 md:px-6 py-4 whitespace-nowrap">
-        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-          budget.isActive 
-            ? 'bg-green-100 text-green-800' 
-            : 'bg-red-100 text-red-800'
-        }`}>
-          {budget.isActive ? 'Ativo' : 'Inativo'}
+        <span
+          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+            budget.isActive
+              ? "bg-green-100 text-green-800"
+              : "bg-red-100 text-red-800"
+          }`}
+        >
+          {budget.isActive ? "Ativo" : "Inativo"}
         </span>
       </td>
       <td className="px-4 md:px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
@@ -527,48 +690,48 @@ function BudgetRow({
         </button>
       </td>
     </tr>
-  )
+  );
 }
 
 interface BudgetCardProps {
-  budget: Budget
-  isEditing: boolean
-  onEdit: () => void
-  onCancel: () => void
-  onSave: (updates: Partial<Budget>) => void
-  onDelete: () => void
-  formatAmount: (amount: number) => string
-  formatPeriod: (period: string) => string
+  budget: Budget;
+  isEditing: boolean;
+  onEdit: () => void;
+  onCancel: () => void;
+  onSave: (updates: Partial<Budget>) => void;
+  onDelete: () => void;
+  formatAmount: (amount: number) => string;
+  formatPeriod: (period: string) => string;
 }
 
-function BudgetCard({ 
-  budget, 
-  isEditing, 
-  onEdit, 
-  onCancel, 
-  onSave, 
-  onDelete, 
-  formatAmount, 
-  formatPeriod 
+function BudgetCard({
+  budget,
+  isEditing,
+  onEdit,
+  onCancel,
+  onSave,
+  onDelete,
+  formatAmount,
+  formatPeriod,
 }: BudgetCardProps) {
   const [editData, setEditData] = useState({
     amount: budget.amount.toString(),
     period: budget.period,
-    isActive: budget.isActive
-  })
+    isActive: budget.isActive,
+  });
 
   const handleSave = () => {
     if (!editData.amount) {
-      alert('Valor é obrigatório')
-      return
+      alert("Valor é obrigatório");
+      return;
     }
 
     onSave({
       amount: parseFloat(editData.amount),
       period: editData.period,
-      isActive: editData.isActive
-    })
-  }
+      isActive: editData.isActive,
+    });
+  };
 
   if (isEditing) {
     return (
@@ -595,7 +758,9 @@ function BudgetCard({
               step="0.01"
               min="0"
               value={editData.amount}
-              onChange={(e) => setEditData({ ...editData, amount: e.target.value })}
+              onChange={(e) =>
+                setEditData({ ...editData, amount: e.target.value })
+              }
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -606,7 +771,9 @@ function BudgetCard({
             </label>
             <select
               value={editData.period}
-              onChange={(e) => setEditData({ ...editData, period: e.target.value as any })}
+              onChange={(e) =>
+                setEditData({ ...editData, period: e.target.value as any })
+              }
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="MONTHLY">Mensal</option>
@@ -620,10 +787,14 @@ function BudgetCard({
               <input
                 type="checkbox"
                 checked={editData.isActive}
-                onChange={(e) => setEditData({ ...editData, isActive: e.target.checked })}
+                onChange={(e) =>
+                  setEditData({ ...editData, isActive: e.target.checked })
+                }
                 className="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
-              <span className="text-sm font-medium text-gray-700">Orçamento ativo</span>
+              <span className="text-sm font-medium text-gray-700">
+                Orçamento ativo
+              </span>
             </label>
           </div>
 
@@ -646,7 +817,7 @@ function BudgetCard({
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -663,7 +834,7 @@ function BudgetCard({
               {budget.category.name}
             </span>
           </div>
-          
+
           <div className="flex items-center gap-2 ml-4">
             <button
               onClick={onEdit}
@@ -685,27 +856,37 @@ function BudgetCard({
         {/* Content Grid */}
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div>
-            <div className="text-gray-500 text-xs uppercase tracking-wider font-medium">Valor</div>
-            <div className="text-gray-900 font-semibold mt-1">{formatAmount(budget.amount)}</div>
+            <div className="text-gray-500 text-xs uppercase tracking-wider font-medium">
+              Valor
+            </div>
+            <div className="text-gray-900 font-semibold mt-1">
+              {formatAmount(budget.amount)}
+            </div>
           </div>
-          
+
           <div>
-            <div className="text-gray-500 text-xs uppercase tracking-wider font-medium">Período</div>
-            <div className="text-gray-900 font-medium mt-1">{formatPeriod(budget.period)}</div>
+            <div className="text-gray-500 text-xs uppercase tracking-wider font-medium">
+              Período
+            </div>
+            <div className="text-gray-900 font-medium mt-1">
+              {formatPeriod(budget.period)}
+            </div>
           </div>
         </div>
 
         {/* Status */}
         <div className="flex justify-start">
-          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-            budget.isActive 
-              ? 'bg-green-100 text-green-800' 
-              : 'bg-red-100 text-red-800'
-          }`}>
-            {budget.isActive ? 'Ativo' : 'Inativo'}
+          <span
+            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+              budget.isActive
+                ? "bg-green-100 text-green-800"
+                : "bg-red-100 text-red-800"
+            }`}
+          >
+            {budget.isActive ? "Ativo" : "Inativo"}
           </span>
         </div>
       </div>
     </div>
-  )
+  );
 }
