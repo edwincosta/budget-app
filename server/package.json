@@ -20,7 +20,14 @@
     "prisma:migrate:deploy": "npx prisma migrate deploy",
     "prisma:studio": "npx prisma studio",
     "prisma:reset": "npx prisma migrate reset",
-    "seed": "ts-node src/utils/seed.ts"
+    "seed": "ts-node src/utils/seed.ts",
+    "db:generate": "npx prisma generate",
+    "db:migrate:deploy": "npx prisma migrate deploy",
+    "db:seed": "ts-node src/utils/seed.ts",
+    "db:status": "npx prisma migrate status",
+    "list:users": "ts-node src/utils/list-users.ts",
+    "test:connection": "ts-node src/utils/test-connection.ts",
+    "start:prod": "NODE_ENV=production node dist/index.js"
   },
   "dependencies": {
     "@prisma/client": "^6.17.1",

@@ -1,22 +1,28 @@
-# 🚀 Quick Deploy Guide - Budget App v1.0
+# 🚀 QUICK DEPLOY - Budget App
 
-## TL;DR - Deploy em 5 minutos
+> **Deploy completo em 10 minutos! 100% gratuito para começar.**
 
-```bash
-# 1. Verificar se está tudo pronto
-node production-check.js
+## ⚡ **DEPLOY SUPER RÁPIDO**
 
-# 2. Setup para deploy
-node deploy-setup.js
+```powershell
+# 1. Execute o script automatizado
+./deploy-complete.ps1
 
-# 3. Ir para Railway: https://railway.app
-# 4. Conectar GitHub repo
-# 5. Adicionar PostgreSQL
-# 6. Configurar ENV vars (ver abaixo)
-# 7. Deploy automático! 🎉
+# 2. Siga as instruções na tela
+# 3. Pronto! Aplicação online! 🎉
 ```
 
-## 📋 Environment Variables (Railway)
+## 🎯 **O QUE VOCÊ VAI PRECISAR**
+
+### **Contas gratuitas (5 minutos para criar)**
+- 🗄️ [Supabase](https://supabase.com) - Database PostgreSQL
+- 🚂 [Railway](https://railway.app) - Backend hosting  
+- 🔥 [Firebase](https://firebase.google.com) - Frontend hosting
+
+### **Ferramentas**
+- ✅ Node.js 18+ 
+- ✅ Git configurado
+- ✅ PowerShell (Windows)
 
 ```bash
 NODE_ENV=production
