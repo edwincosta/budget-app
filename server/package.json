@@ -20,12 +20,7 @@
     "prisma:migrate:deploy": "npx prisma migrate deploy",
     "prisma:studio": "npx prisma studio",
     "prisma:reset": "npx prisma migrate reset",
-    "seed": "ts-node src/utils/seed.ts",
-    "railway:build": "npm install && npm run prisma:generate && npm run build",
-    "railway:start": "npm run prisma:migrate:deploy && npm start",
-    "railway:full": "npm install && npm run prisma:generate && npm run build && npm run prisma:migrate:deploy && npm start",
-    "railway:start:simple": "npm start",
-    "railway:dev": "npm run prisma:migrate:deploy && npm run start:ts"
+    "seed": "ts-node src/utils/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.17.1",
