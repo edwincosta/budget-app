@@ -1,184 +1,196 @@
-# Budget App 💰
+# 💰 Budget App - Sistema de Orçamentos Pessoais
 
-Aplicativo web completo de gerenciamento de orçamento pessoal com **arquitetura budget-centric** e cliente-servidor.
+> **Sistema completo de gerenciamento financeiro pessoal com arquitetura budget-centric**
 
-> **🏗️ Arquitetura Budget-Centric**: Todos os dados pertencem a um orçamento específico, garantindo isolamento total e suporte nativo a compartilhamento com permissões granulares.
+## 🎯 Visão Geral
 
-## 🚀 Tecnologias
+O Budget App é um sistema moderno de gestão financeira pessoal que permite criar múltiplos orçamentos, gerenciar contas bancárias, categorizar transações, compartilhar orçamentos e importar extratos bancários automaticamente.
 
-### Frontend
-- React 18 + TypeScript
-- Vite (build tool)
-- Tailwind CSS (styling)
-- React Query (state management)
-- React Hook Form (forms)
-- Recharts (gráficos)
-- React Context API (BudgetContext)
+### 🌟 Funcionalidades Principais
 
-### Backend
-- Node.js + Express + TypeScript
-- Prisma ORM + PostgreSQL
-- JWT Authentication
-- bcrypt (hash de senhas)
-- Helmet + CORS (segurança)
-- Multer (upload de arquivos)
-- File Processing: csv-parser, pdf-parse, iconv-lite
+- ✅ **Gestão de Múltiplos Orçamentos** - Crie e gerencie vários orçamentos (pessoal, familiar, negócios)
+- ✅ **Contas Bancárias** - Suporte a conta corrente, poupança, cartão de crédito, investimentos
+- ✅ **Categorização Inteligente** - Organize receitas e despesas por categorias personalizáveis
+- ✅ **Compartilhamento de Orçamentos** - Compartilhe com permissões READ/WRITE
+- ✅ **Importação de Extratos** - CSV, PDF e Excel de bancos brasileiros (Nubank, BTG, Bradesco, etc.)
+- ✅ **Dashboard e Relatórios** - Análises financeiras e métricas em tempo real
+- ✅ **Detecção de Duplicatas** - Sistema avançado para evitar lançamentos duplicados
+- ✅ **Interface Responsiva** - Design mobile-first com Tailwind CSS
 
-### DevOps
-- Docker & Docker Compose
-- Railway/Render ready
+## 🏗️ Arquitetura
 
-## 🏗️ Estrutura do Projeto
+### Stack Tecnológica
 
-```
-budget/
-├── client/                 # Frontend React
-│   ├── src/
-│   │   ├── components/    # Componentes reutilizáveis
-│   │   ├── pages/         # Páginas da aplicação
-│   │   ├── hooks/         # Custom hooks
-│   │   ├── services/      # API calls
-│   │   ├── types/         # TypeScript types
-│   │   └── utils/         # Utilitários
-│   ├── public/
-│   └── package.json
-├── server/                # Backend Node.js
-│   ├── src/
-│   │   ├── controllers/   # Lógica de negócio
-│   │   ├── routes/        # Rotas da API
-│   │   ├── middleware/    # Middlewares
-│   │   ├── models/        # Modelos de dados
-│   │   └── utils/         # Utilitários
-│   ├── prisma/           # Schema do banco
-│   └── package.json
-├── docker-compose.yml    # Configuração Docker
-└── .env.example         # Variáveis de ambiente
-```
+- **Frontend**: React 18 + TypeScript + Vite + Tailwind CSS
+- **Backend**: Node.js + Express + TypeScript
+- **Database**: PostgreSQL (Supabase)
+- **ORM**: Prisma
+- **Deploy**: Render (Docker + Static Site)
+- **Auth**: JWT customizado
 
-## 🔧 Como executar
+### Arquitetura Budget-Centric
 
-### Desenvolvimento
-```bash
-# Clone e instale dependências
-cd budget
-npm run install:all
+Todo o sistema é organizado em torno de **orçamentos**:
 
-# Execute com Docker
-docker-compose up --build
+- Cada usuário pode ter múltiplos orçamentos
+- Todas as entidades (contas, transações, categorias) pertencem a um orçamento
+- Isolamento total entre orçamentos
+- Sistema de compartilhamento com permissões granulares
 
-# Ou execute manualmente
-npm run dev:server    # Backend na porta 3001
-npm run dev:client    # Frontend na porta 5173
-```
+## 🚀 Deploy e Produção
 
-> 📋 **Dados de Desenvolvimento**: O sistema cria automaticamente usuários de teste, orçamentos e categorias. Consulte [`server/src/utils/DEVELOPMENT.md`](./server/src/utils/DEVELOPMENT.md) para detalhes sobre seed automático e parsers.
+### URLs de Produção
 
-### Produção
-```bash
-# Build e execute
-docker-compose -f docker-compose.prod.yml up --build
-```
+- **Frontend**: https://budget-app-docker-client.onrender.com
+- **Backend API**: https://budget-app-docker-server.onrender.com
+- **Database**: Supabase PostgreSQL
 
-## 📱 Funcionalidades
+### Stack de Produção
 
-### 🔐 Sistema de Autenticação e Orçamentos
-- ✅ Autenticação segura (JWT)
-- ✅ Múltiplos orçamentos por usuário
-- ✅ **Sistema de Compartilhamento Avançado** 🤝
-  - Convites para outros usuários com permissões granulares
-  - **OWNER**: Acesso total + gestão de compartilhamentos
-  - **WRITE**: Criar/editar/excluir dados (exceto compartilhamento)
-  - **READ**: Apenas visualização
-  - Interface responsiva para gestão de acesso
+- **Frontend**: Render Static Site
+- **Backend**: Render Docker Container
+- **Database**: Supabase PostgreSQL (Gratuito)
+- **Custo Total**: $0/mês
+  │ │ └── utils/ # Utilitários
 
-### 💰 Gestão Financeira
-- ✅ Dashboard responsivo com análises financeiras
-- ✅ Gestão completa de receitas e despesas
-- ✅ Categorização inteligente de transações
-- ✅ Sistema de contas múltiplas (Corrente, Poupança, Cartão, Investimentos)
-- ✅ Orçamentos mensais/trimestrais/anuais (planejado vs realizado)
+## 📋 Guia de Deploy
 
-### 📄 **Importação de Extratos Bancários** 🆕
-- ✅ **Suporte a múltiplos formatos**: CSV, PDF, Excel
-- ✅ **Bancos brasileiros suportados**: 
-  - Nubank, BTG Pactual, Bradesco, Itaú
-  - C6 Bank, Clear, Inter, XP Investimentos
-- ✅ **Detecção automática de duplicatas**
-- ✅ **Classificação manual** de transações importadas
-- ✅ **Filtro por período de datas** (opcional)
-- ✅ **Detecção automática de encoding** (UTF-8, ISO-8859-1)
-- ✅ **Gestão de sessões de importação** com status
+### Pré-requisitos
 
-### 📊 Análises e Relatórios
-- ✅ Gráficos e relatórios avançados
-- ✅ Exportação de dados (CSV)
-- ✅ Análise orçado vs realizado
-- ✅ Design responsivo e moderno
-- ✅ PWA ready
+- Conta no [Supabase](https://supabase.com)
+- Conta no [Render](https://render.com)
+- Repositório no GitHub
 
-## 🚢 Deploy em Produção (v1.0)
+### 1. Setup do Database (Supabase)
 
-### 🎯 Deploy no Railway (Recomendado - Gratuito)
+1. **Criar projeto** no Supabase
+2. **Executar SQL** do arquivo `server/create-tables.sql`
+3. **Copiar** connection string do pooler
 
-O Budget App está totalmente configurado para deploy no [Railway](https://railway.app):
+### 2. Deploy do Backend (Render Docker)
 
-1. **Preparar para deploy:**
-   ```bash
-   node deploy-setup.js
+1. **Render** → New Web Service → Docker
+2. **Configurar**:
+
+   - Repository: `seu-usuario/budget-app`
+   - Branch: `client`
+   - Root Directory: `server`
+   - Dockerfile Path: `Dockerfile.production`
+
+3. **Environment Variables**:
    ```
-
-2. **Acessar Railway:**
-   - Vá para https://railway.app
-   - Faça login com GitHub
-   - Clique em "New Project"
-
-3. **Configurar projeto:**
-   - Conecte seu repositório GitHub
-   - Railway detectará automaticamente as configurações
-
-4. **Adicionar PostgreSQL:**
-   - Clique em "Add Plugin" → "PostgreSQL"
-   - Será criado automaticamente com DATABASE_URL
-
-5. **Configurar variáveis de ambiente:**
-   ```bash
-   JWT_SECRET=your_super_secure_32_character_secret_here
    NODE_ENV=production
-   CORS_ORIGIN=https://your-app-name.railway.app
+   DATABASE_URL=postgresql://postgres.projeto:senha@pooler.supabase.com:6543/postgres?pgbouncer=true
+   JWT_SECRET=sua_chave_secreta_32_caracteres_minimo
+   JWT_EXPIRES_IN=7d
    BCRYPT_ROUNDS=12
    ```
 
-6. **Deploy automático será executado!**
+### 3. Deploy do Frontend (Render Static Site)
 
-### ⚡ Comandos de Produção
+1. **Render** → New Static Site
+2. **Configurar**:
 
-```bash
-# Build completo para produção
-npm run build:production
+   - Repository: `seu-usuario/budget-app`
+   - Branch: `client`
+   - Root Directory: `client`
+   - Build Command: `npm run build`
+   - Publish Directory: `dist`
 
-# Iniciar em produção (Railway usa automaticamente)
-npm run start:production
+3. **Environment Variables**:
+   ```
+   VITE_API_URL=https://seu-backend.onrender.com
+   ```
 
-# Deploy setup
-node deploy-setup.js
+### 4. Configurar CORS
+
+**No backend Render**, adicionar:
+
+```
+CORS_ORIGIN=https://seu-frontend.onrender.com
 ```
 
-### 🔧 Configurações de Produção
+## 🛠️ Desenvolvimento Local
 
-- ✅ **Rate limiting**: 100 req/15min em produção
-- ✅ **Security headers**: Helmet configurado
-- ✅ **Compression**: Gzip ativado
-- ✅ **Health checks**: `/health` endpoint
-- ✅ **Static files**: React servido pelo Express
-- ✅ **Database migrations**: Automática no deploy
-- ✅ **Error handling**: Logs estruturados
+### Usando Docker (Recomendado)
 
-### 📋 Documentação Completa
+```bash
+# Clone o repositório
+git clone https://github.com/seu-usuario/budget-app.git
+cd budget-app
 
-- [`RAILWAY_DEPLOY.md`](./RAILWAY_DEPLOY.md) - Guia detalhado do Railway
-- [`SETUP.md`](./SETUP.md) - Configuração de desenvolvimento
-- [`server/src/utils/DEVELOPMENT.md`](./server/src/utils/DEVELOPMENT.md) - Sistema de seed e parsers
+# Suba os serviços
+docker-compose up -d
 
-## 📄 Licença
+# Aplicação estará disponível em:
+# Frontend: http://localhost:5173
+# Backend: http://localhost:3001
+# Database: PostgreSQL na porta 5432
+```
 
-MIT License
+### Setup Manual
+
+1. **Database**:
+
+   ```bash
+   # PostgreSQL local ou usar Supabase
+   createdb budget_db
+   ```
+
+2. **Backend**:
+
+   ```bash
+   cd server
+   npm install
+   cp .env.example .env
+   # Configurar DATABASE_URL no .env
+   npx prisma migrate dev
+   npm run seed
+   npm run dev
+   ```
+
+3. **Frontend**:
+   ```bash
+   cd client
+   npm install
+   npm run dev
+   ```
+
+## 👥 Usuários de Teste
+
+Para testes em desenvolvimento, use:
+
+- **Email**: joao@example.com, maria@example.com, pedro@example.com
+- **Senha**: 123456
+
+## 📚 Documentação Técnica
+
+- **Contexto Copilot**: `.github/copilot/copilot-context.md`
+- **Regras de Desenvolvimento**: `.github/copilot/instructions/development-rules.md`
+- **Checklist**: `.github/copilot/instructions/development-checklist.md`
+- **Schema Database**: `server/prisma/schema.prisma`
+
+## 🔒 Segurança
+
+- **Autenticação**: JWT com expiração configurável
+- **Autorização**: Middleware de verificação de orçamento
+- **Rate Limiting**: Proteção contra spam
+- **Validação**: Joi para validação de dados
+- **CORS**: Configurado para produção
+- **Headers de Segurança**: Helmet configurado
+
+## 🤝 Contribuição
+
+1. Fork o projeto
+2. Crie uma branch (`git checkout -b feature/nova-funcionalidade`)
+3. Commit suas mudanças (`git commit -m 'Add nova funcionalidade'`)
+4. Push para a branch (`git push origin feature/nova-funcionalidade`)
+5. Abra um Pull Request
+
+## � Licença
+
+Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para detalhes.
+
+---
+
+**🚀 Budget App** - Gerencie suas finanças com inteligência e simplicidade!

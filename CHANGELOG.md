@@ -22,7 +22,6 @@
 - **File Processing**: Multer + csv-parser + pdf-parse + xlsx
 
 ### 🔧 Production Ready
-- **Railway deployment** configurado
 - **Docker** support completo
 - **Environment variables** otimizadas
 - **Health checks** implementados
@@ -43,8 +42,6 @@
 - XP Investimentos (Conta + Investimentos + Cartão)
 
 ### 🚀 Deployment
-- **Railway** integration completa
-- **Vercel** support para frontend
 - **Docker** production builds
 - **CI/CD** com GitHub Actions
 - **Health monitoring** endpoints
@@ -81,7 +78,7 @@
 2. **Context API**: Para gerenciamento de estado global do orçamento ativo
 3. **Prisma**: Para type-safe database operations
 4. **React Query**: Para cache e sincronização de dados
-5. **Railway**: Como plataforma de deploy por ser gratuita e completa
+5. **Docker**: Para containerização e deploy em qualquer plataforma
 
 ### Próximas Versões
 - **v1.1**: PWA support completo

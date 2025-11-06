@@ -21,14 +21,16 @@
     "prisma:studio": "npx prisma studio",
     "prisma:reset": "npx prisma migrate reset",
     "seed": "ts-node src/utils/seed.ts",
-    "railway:build": "npm install && npm run prisma:generate && npm run build",
-    "railway:start": "npm run prisma:migrate:deploy && npm start",
-    "railway:full": "npm install && npm run prisma:generate && npm run build && npm run prisma:migrate:deploy && npm start",
-    "railway:start:simple": "npm start",
-    "railway:dev": "npm run prisma:migrate:deploy && npm run start:ts"
+    "db:generate": "npx prisma generate",
+    "db:migrate:deploy": "npx prisma migrate deploy",
+    "db:seed": "ts-node src/utils/seed.ts",
+    "db:status": "npx prisma migrate status",
+    "list:users": "ts-node src/utils/list-users.ts",
+    "test:connection": "ts-node src/utils/test-connection.ts",
+    "start:prod": "NODE_ENV=production node dist/index.js"
   },
   "dependencies": {
-    "@prisma/client": "^6.17.1",
+    "@prisma/client": "^6.19.0",
     "@types/exceljs": "^0.5.3",
     "@types/multer": "^2.0.0",
     "@types/node-xlsx": "^0.15.3",
@@ -47,8 +49,7 @@
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
     "node-xlsx": "^0.24.0",
-    "pdfjs-dist": "^5.4.296",
-    "prisma": "^6.17.1"
+    "pdfjs-dist": "^5.4.296"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -61,6 +62,7 @@
     "@types/supertest": "^6.0.3",
     "jest": "^30.2.0",
     "nodemon": "^3.0.1",
+    "prisma": "^6.19.0",
     "supertest": "^7.1.4",
     "ts-jest": "^29.4.5",
     "ts-node": "^10.9.1",
