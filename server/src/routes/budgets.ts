@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import multer from 'multer';
 import * as path from 'path';
 import * as os from 'os';
+import Joi from 'joi';
 import { auth, AuthRequest } from '../middleware/auth';
 import { budgetAuth, requireWritePermission, requireOwnership, BudgetAuthRequest } from '../middleware/budgetAuth';
 import { ImportController } from '../controllers/importController';
@@ -689,6 +690,132 @@ router.get('/:budgetId/accounts', auth, budgetAuth, async (req: BudgetAuthReques
   }
 });
 
+// Criar conta para orçamento específico
+router.post('/:budgetId/accounts', auth, budgetAuth, requireWritePermission, async (req: BudgetAuthRequest, res) => {
+  try {
+    const accountSchema = Joi.object({
+      name: Joi.string().min(1).max(50).required(),
+      type: Joi.string().valid('CHECKING', 'SAVINGS', 'CREDIT_CARD', 'INVESTMENT').required(),
+      balance: Joi.number().default(0),
+      description: Joi.string().max(200).optional(),
+      inactive: Joi.boolean().default(false)
+    });
+
+    const { error, value } = accountSchema.validate(req.body);
+    if (error) {
+      res.status(400).json({ message: error.details[0]?.message });
+      return;
+    }
+
+    const account = await prisma.account.create({
+      data: {
+        ...value,
+        budgetId: req.budget!.id
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      data: {
+        ...account,
+        balance: parseFloat(account.balance.toString())
+      }
+    });
+  } catch (error) {
+    console.error('Error creating budget account:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Atualizar conta para orçamento específico
+router.put('/:budgetId/accounts/:accountId', auth, budgetAuth, requireWritePermission, async (req: BudgetAuthRequest, res) => {
+  try {
+    const { accountId } = req.params;
+
+    const accountSchema = Joi.object({
+      name: Joi.string().min(1).max(50).required(),
+      type: Joi.string().valid('CHECKING', 'SAVINGS', 'CREDIT_CARD', 'INVESTMENT').required(),
+      balance: Joi.number().default(0),
+      description: Joi.string().max(200).optional(),
+      inactive: Joi.boolean().default(false)
+    });
+
+    const { error, value } = accountSchema.validate(req.body);
+    if (error) {
+      res.status(400).json({ message: error.details[0]?.message });
+      return;
+    }
+
+    // Verificar se a conta existe e pertence ao orçamento
+    const existingAccount = await prisma.account.findFirst({
+      where: {
+        id: accountId,
+        budgetId: req.budget!.id
+      }
+    });
+
+    if (!existingAccount) {
+      res.status(404).json({ message: 'Account not found in this budget' });
+      return;
+    }
+
+    const account = await prisma.account.update({
+      where: { id: accountId },
+      data: value
+    });
+
+    res.json({
+      success: true,
+      data: {
+        ...account,
+        balance: parseFloat(account.balance.toString())
+      }
+    });
+  } catch (error) {
+    console.error('Error updating budget account:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Deletar conta para orçamento específico
+router.delete('/:budgetId/accounts/:accountId', auth, budgetAuth, requireWritePermission, async (req: BudgetAuthRequest, res) => {
+  try {
+    const { accountId } = req.params;
+
+    // Verificar se a conta existe e pertence ao orçamento
+    const existingAccount = await prisma.account.findFirst({
+      where: {
+        id: accountId,
+        budgetId: req.budget!.id
+      }
+    });
+
+    if (!existingAccount) {
+      res.status(404).json({ message: 'Account not found in this budget' });
+      return;
+    }
+
+    // Verificar se há transações associadas
+    const transactionCount = await prisma.transaction.count({
+      where: { accountId }
+    });
+
+    if (transactionCount > 0) {
+      res.status(400).json({ message: 'Cannot delete account with existing transactions' });
+      return;
+    }
+
+    await prisma.account.delete({
+      where: { id: accountId }
+    });
+
+    res.status(204).send();
+  } catch (error) {
+    console.error('Error deleting budget account:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 // Categorias para orçamento específico
 router.get('/:budgetId/categories', auth, budgetAuth, async (req: BudgetAuthRequest, res) => {
   try {
@@ -703,6 +830,126 @@ router.get('/:budgetId/categories', auth, budgetAuth, async (req: BudgetAuthRequ
     });
   } catch (error) {
     console.error('Error getting budget categories:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Criar categoria para orçamento específico
+router.post('/:budgetId/categories', auth, budgetAuth, requireWritePermission, async (req: BudgetAuthRequest, res) => {
+  try {
+    const categorySchema = Joi.object({
+      name: Joi.string().min(1).max(50).required(),
+      type: Joi.string().valid('INCOME', 'EXPENSE').required(),
+      color: Joi.string().pattern(/^#[0-9A-F]{6}$/i).optional(),
+      description: Joi.string().max(200).optional(),
+      inactive: Joi.boolean().default(false)
+    });
+
+    const { error, value } = categorySchema.validate(req.body);
+    if (error) {
+      res.status(400).json({ message: error.details[0]?.message });
+      return;
+    }
+
+    const category = await prisma.category.create({
+      data: {
+        ...value,
+        budgetId: req.budget!.id
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      data: category
+    });
+  } catch (error) {
+    console.error('Error creating budget category:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Atualizar categoria para orçamento específico
+router.put('/:budgetId/categories/:categoryId', auth, budgetAuth, requireWritePermission, async (req: BudgetAuthRequest, res) => {
+  try {
+    const { categoryId } = req.params;
+
+    const categorySchema = Joi.object({
+      name: Joi.string().min(1).max(50).required(),
+      type: Joi.string().valid('INCOME', 'EXPENSE').required(),
+      color: Joi.string().pattern(/^#[0-9A-F]{6}$/i).optional(),
+      description: Joi.string().max(200).optional(),
+      inactive: Joi.boolean().default(false)
+    });
+
+    const { error, value } = categorySchema.validate(req.body);
+    if (error) {
+      res.status(400).json({ message: error.details[0]?.message });
+      return;
+    }
+
+    // Verificar se a categoria existe e pertence ao orçamento
+    const existingCategory = await prisma.category.findFirst({
+      where: {
+        id: categoryId,
+        budgetId: req.budget!.id
+      }
+    });
+
+    if (!existingCategory) {
+      res.status(404).json({ message: 'Category not found in this budget' });
+      return;
+    }
+
+    const category = await prisma.category.update({
+      where: { id: categoryId },
+      data: value
+    });
+
+    res.json({
+      success: true,
+      data: category
+    });
+  } catch (error) {
+    console.error('Error updating budget category:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Deletar categoria para orçamento específico
+router.delete('/:budgetId/categories/:categoryId', auth, budgetAuth, requireWritePermission, async (req: BudgetAuthRequest, res) => {
+  try {
+    const { categoryId } = req.params;
+
+    // Verificar se a categoria existe e pertence ao orçamento
+    const existingCategory = await prisma.category.findFirst({
+      where: {
+        id: categoryId,
+        budgetId: req.budget!.id
+      }
+    });
+
+    if (!existingCategory) {
+      res.status(404).json({ message: 'Category not found in this budget' });
+      return;
+    }
+
+    // Verificar se há transações associadas
+    const transactionCount = await prisma.transaction.count({
+      where: { categoryId }
+    });
+
+    if (transactionCount > 0) {
+      res.status(400).json({ message: 'Cannot delete category with existing transactions' });
+      return;
+    }
+
+    await prisma.category.delete({
+      where: { id: categoryId }
+    });
+
+    res.status(204).send();
+  } catch (error) {
+    console.error('Error deleting budget category:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
@@ -728,6 +975,166 @@ router.get('/:budgetId/transactions', auth, budgetAuth, async (req: BudgetAuthRe
     });
   } catch (error) {
     console.error('Error getting budget transactions:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Criar transação para orçamento específico
+router.post('/:budgetId/transactions', auth, budgetAuth, requireWritePermission, async (req: BudgetAuthRequest, res) => {
+  try {
+    const transactionSchema = Joi.object({
+      description: Joi.string().min(1).max(100).required(),
+      amount: Joi.number().required(),
+      type: Joi.string().valid('INCOME', 'EXPENSE', 'TRANSFER').required(),
+      date: Joi.date().required(),
+      categoryId: Joi.string().required(),
+      accountId: Joi.string().required(),
+      transferToAccountId: Joi.string().optional(),
+      tags: Joi.array().items(Joi.string()).optional()
+    });
+
+    const { error, value } = transactionSchema.validate(req.body);
+    if (error) {
+      res.status(400).json({ message: error.details[0]?.message });
+      return;
+    }
+
+    // Verificar se a conta e categoria pertencem ao orçamento
+    const [account, category] = await Promise.all([
+      prisma.account.findFirst({
+        where: { id: value.accountId, budgetId: req.budget!.id }
+      }),
+      prisma.category.findFirst({
+        where: { id: value.categoryId, budgetId: req.budget!.id }
+      })
+    ]);
+
+    if (!account || !category) {
+      res.status(400).json({ message: 'Account or category not found in this budget' });
+      return;
+    }
+
+    const transaction = await prisma.transaction.create({
+      data: {
+        ...value,
+        budgetId: req.budget!.id
+      },
+      include: {
+        account: { select: { name: true, type: true } },
+        category: { select: { name: true, type: true, color: true } }
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      data: {
+        ...transaction,
+        amount: parseFloat(transaction.amount.toString())
+      }
+    });
+  } catch (error) {
+    console.error('Error creating budget transaction:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Atualizar transação para orçamento específico
+router.put('/:budgetId/transactions/:transactionId', auth, budgetAuth, requireWritePermission, async (req: BudgetAuthRequest, res) => {
+  try {
+    const { transactionId } = req.params;
+
+    const transactionSchema = Joi.object({
+      description: Joi.string().min(1).max(100).required(),
+      amount: Joi.number().required(),
+      type: Joi.string().valid('INCOME', 'EXPENSE', 'TRANSFER').required(),
+      date: Joi.date().required(),
+      categoryId: Joi.string().required(),
+      accountId: Joi.string().required(),
+      transferToAccountId: Joi.string().optional(),
+      tags: Joi.array().items(Joi.string()).optional()
+    });
+
+    const { error, value } = transactionSchema.validate(req.body);
+    if (error) {
+      res.status(400).json({ message: error.details[0]?.message });
+      return;
+    }
+
+    // Verificar se a transação existe e pertence ao orçamento
+    const existingTransaction = await prisma.transaction.findFirst({
+      where: {
+        id: transactionId,
+        budgetId: req.budget!.id
+      }
+    });
+
+    if (!existingTransaction) {
+      res.status(404).json({ message: 'Transaction not found in this budget' });
+      return;
+    }
+
+    // Verificar se a conta e categoria pertencem ao orçamento
+    const [account, category] = await Promise.all([
+      prisma.account.findFirst({
+        where: { id: value.accountId, budgetId: req.budget!.id }
+      }),
+      prisma.category.findFirst({
+        where: { id: value.categoryId, budgetId: req.budget!.id }
+      })
+    ]);
+
+    if (!account || !category) {
+      res.status(400).json({ message: 'Account or category not found in this budget' });
+      return;
+    }
+
+    const transaction = await prisma.transaction.update({
+      where: { id: transactionId },
+      data: value,
+      include: {
+        account: { select: { name: true, type: true } },
+        category: { select: { name: true, type: true, color: true } }
+      }
+    });
+
+    res.json({
+      success: true,
+      data: {
+        ...transaction,
+        amount: parseFloat(transaction.amount.toString())
+      }
+    });
+  } catch (error) {
+    console.error('Error updating budget transaction:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Deletar transação para orçamento específico
+router.delete('/:budgetId/transactions/:transactionId', auth, budgetAuth, requireWritePermission, async (req: BudgetAuthRequest, res) => {
+  try {
+    const { transactionId } = req.params;
+
+    // Verificar se a transação existe e pertence ao orçamento
+    const existingTransaction = await prisma.transaction.findFirst({
+      where: {
+        id: transactionId,
+        budgetId: req.budget!.id
+      }
+    });
+
+    if (!existingTransaction) {
+      res.status(404).json({ message: 'Transaction not found in this budget' });
+      return;
+    }
+
+    await prisma.transaction.delete({
+      where: { id: transactionId }
+    });
+
+    res.status(204).send();
+  } catch (error) {
+    console.error('Error deleting budget transaction:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 });

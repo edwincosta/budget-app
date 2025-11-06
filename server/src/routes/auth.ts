@@ -63,6 +63,21 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
       }
     });
 
+    // Create default budget for new user
+    const defaultBudget = await prisma.budget.create({
+      data: {
+        name: 'Meu Orçamento',
+        description: 'Orçamento pessoal padrão',
+        ownerId: user.id
+      }
+    });
+
+    // Set as default budget for user
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { defaultBudgetId: defaultBudget.id }
+    });
+
     // Create JWT token
     const token = jwt.sign(
       { id: user.id },
@@ -91,7 +106,7 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
       res.status(400).json({ message: error.details[0]?.message });
       return;
     }
-    
+
     const { email, password } = value;
 
     // Check if user exists
@@ -139,7 +154,7 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
 router.get('/me', auth, async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = (req as any).user.id;
-    
+
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {

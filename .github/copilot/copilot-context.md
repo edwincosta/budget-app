@@ -5,6 +5,7 @@
 O **Budget App** é um sistema completo de gerenciamento de orçamentos pessoais com arquitetura cliente-servidor, desenvolvido em **React + TypeScript** (frontend) e **Node.js + Express + TypeScript** (backend), utilizando **PostgreSQL** com **Prisma ORM**.
 
 ### Funcionalidades Principais
+
 - ✅ Gestão de usuários com autenticação JWT
 - ✅ Criação e gerenciamento de múltiplos orçamentos
 - ✅ Sistema de contas bancárias por tipos
@@ -42,6 +43,7 @@ budget/
 ```
 
 ### Stack Tecnológica
+
 **Frontend:** React 18, TypeScript (v5.9.3), Vite (v7.1.9), Tailwind CSS (v3.4.18), React Query (v4.41.0), React Hook Form (v7.65.0), Recharts (v3.2.1), React Context API - **🆕 Todas bibliotecas atualizadas para versões seguras**
 **Backend:** Node.js, Express, TypeScript, Prisma ORM (v6.17.1), PostgreSQL, JWT, bcrypt, Multer (file upload)
 **File Processing:** csv-parser, pdf-parse (v2.3.0), ExcelJS (v4.4.0), node-xlsx, iconv-lite, chardet (encoding detection)
@@ -55,29 +57,28 @@ budget/
 ### Entidades Principais
 
 #### 1. **User** - Usuários do sistema
-```prisma
+
+````prisma
 model User {
   id              String   # Identificador único (cuid)
   email           String   # Email único para login
   name            String   # Nome do usuário
   password        String   # Hash da senha (bcrypt)
   defaultBudgetId String?  # Orçamento padrão ativo
-  
+
   # Relacionamentos
   ownedBudgets    Budget[] # Orçamentos criados pelo usuário
   sharedBudgets   BudgetShare[] # Orçamentos compartilhados com o usuário
-  defaultBudget   Budget?  # Referência ao orçamento padrão
 }
-```
+```#### 2. **Budget** - Orçamentos (container principal)
 
-#### 2. **Budget** - Orçamentos (container principal)
 ```prisma
 model Budget {
   id          String   # Identificador único
   name        String   # Nome do orçamento
   description String?  # Descrição opcional
   ownerId     String   # Proprietário do orçamento
-  
+
   # Entidades filhas
   accounts     Account[]     # Contas bancárias
   categories   Category[]    # Categorias de receita/despesa
@@ -85,9 +86,10 @@ model Budget {
   budgetItems  BudgetItem[]  # Orçamentos planejados por categoria
   shares       BudgetShare[] # Compartilhamentos
 }
-```
+````
 
 #### 3. **Account** - Contas bancárias
+
 ```prisma
 model Account {
   id          String      # Identificador único
@@ -109,6 +111,7 @@ enum AccountType {
 ```
 
 #### 4. **Category** - Categorias de transações
+
 ```prisma
 model Category {
   id       String       # Identificador único
@@ -127,6 +130,7 @@ enum CategoryType {
 ```
 
 #### 5. **Transaction** - Transações financeiras
+
 ```prisma
 model Transaction {
   id          String          # Identificador único
@@ -147,6 +151,7 @@ enum TransactionType {
 ```
 
 #### 6. **BudgetItem** - Orçamentos planejados
+
 ```prisma
 model BudgetItem {
   id         String       # Identificador único
@@ -165,6 +170,7 @@ enum BudgetPeriod {
 ```
 
 #### 7. **BudgetShare** - Sistema de compartilhamento
+
 ```prisma
 model BudgetShare {
   id           String          # Identificador único
@@ -188,6 +194,7 @@ enum ShareStatus {
 ```
 
 #### 8. **ImportSession** - Sessões de importação de extratos
+
 ```prisma
 model ImportSession {
   id                String            # Identificador único
@@ -217,6 +224,7 @@ enum ImportStatus {
 ```
 
 #### 9. **TempTransaction** - Transações temporárias (antes da importação)
+
 ```prisma
 model TempTransaction {
   id              String          # Identificador único
@@ -238,27 +246,30 @@ model TempTransaction {
 ## 🔐 SISTEMA DE AUTENTICAÇÃO E AUTORIZAÇÃO
 
 ### Middleware de Autenticação
+
 - **`auth`**: Valida JWT token e extrai dados do usuário
 - **`budgetAuth`**: Verifica acesso a orçamentos específicos
 - **`requireWritePermission`**: Exige permissão de escrita
 - **`requireOwnership`**: Exige ser proprietário do orçamento
 
 ### Hierarquia de Permissões
+
 1. **OWNER**: Proprietário - acesso total (CRUD + compartilhamento)
 2. **WRITE**: Escrita - pode criar/editar/excluir dados (exceto compartilhamento)
 3. **READ**: Leitura - apenas visualização
 
 ### Fluxo de Autorização
+
 ```typescript
 // 1. Autenticação básica
 router.use(auth); // Valida JWT
 
 // 2. Autorização de orçamento (quando aplicável)
-router.use('/:budgetId/*', budgetAuth); // Valida acesso ao orçamento
+router.use("/:budgetId/*", budgetAuth); // Valida acesso ao orçamento
 
 // 3. Permissões específicas
-router.post('/', requireWritePermission); // Para criação
-router.delete('/', requireOwnership);     // Para deleção
+router.post("/", requireWritePermission); // Para criação
+router.delete("/", requireOwnership); // Para deleção
 ```
 
 ---
@@ -266,17 +277,20 @@ router.delete('/', requireOwnership);     // Para deleção
 ## 🛣️ ROTAS E ENDPOINTS DA API
 
 ### **Auth Routes** (`/api/auth`)
+
 ```typescript
 POST /register    # Criar nova conta
 POST /login       # Fazer login
 ```
 
 ### **Users Routes** (`/api/users`)
+
 ```typescript
 GET /profile      # Obter perfil do usuário logado
 ```
 
 ### **Budgets Routes** (`/api/budgets`)
+
 ```typescript
 GET    /                    # Listar orçamentos (próprios + compartilhados)
 POST   /                    # Criar novo orçamento
@@ -296,6 +310,7 @@ GET    /analysis           # Análise orçado vs realizado
 ```
 
 ### **Accounts Routes** (`/api/accounts`)
+
 ```typescript
 GET    /         # Listar contas do orçamento padrão
 POST   /         # Criar nova conta
@@ -304,6 +319,7 @@ DELETE /:id      # Deletar conta (se não tiver transações)
 ```
 
 ### **Categories Routes** (`/api/categories`)
+
 ```typescript
 GET    /         # Listar categorias do orçamento padrão
 POST   /         # Criar nova categoria
@@ -312,6 +328,7 @@ DELETE /:id      # Deletar categoria (se não tiver transações)
 ```
 
 ### **Transactions Routes** (`/api/transactions`)
+
 ```typescript
 GET    /         # Listar transações do orçamento padrão
 POST   /         # Criar nova transação
@@ -320,6 +337,7 @@ DELETE /:id      # Deletar transação
 ```
 
 ### **Sharing Routes** (`/api/sharing`)
+
 ```typescript
 POST   /invite                       # Enviar convite de compartilhamento
 GET    /invitations                  # Listar convites recebidos
@@ -333,6 +351,7 @@ POST   /:budgetId/share              # Compartilhar orçamento específico
 ```
 
 ### **Reports Routes** (`/api/reports`)
+
 ```typescript
 GET /comparison           # Comparação de períodos
 GET /monthly-detail       # Detalhes mensais
@@ -340,12 +359,14 @@ GET /performance         # Análise de performance
 ```
 
 ### **Dashboard Routes** (`/api/dashboard`)
+
 ```typescript
 GET /stats               # Estatísticas do orçamento padrão
 GET /overview           # Visão geral financeira
 ```
 
 ### **Import Routes** (`/api/import`)
+
 ```typescript
 POST   /upload                       # Upload e processamento de arquivo (multipart/form-data)
 GET    /sessions                     # Lista sessões de importação do usuário
@@ -364,6 +385,7 @@ DELETE /budgets/:budgetId/import/sessions/:sessionId                   # Cancela
 ```
 
 ### **Rotas com Suporte a Orçamento Específico**
+
 ```typescript
 # Todas as rotas abaixo também funcionam com orçamento específico:
 
@@ -373,7 +395,7 @@ POST   /budgets/:budgetId/accounts
 PUT    /budgets/:budgetId/accounts/:id
 DELETE /budgets/:budgetId/accounts/:id
 
-# Categorias de um orçamento específico  
+# Categorias de um orçamento específico
 GET    /budgets/:budgetId/categories
 POST   /budgets/:budgetId/categories
 PUT    /budgets/:budgetId/categories/:id
@@ -409,14 +431,16 @@ GET    /budgets/:budgetId/analysis
 ## 📋 REGRAS DE NEGÓCIO ESSENCIAIS
 
 ### 1. **Orçamentos e Acesso**
+
 - ✅ Cada usuário pode ter múltiplos orçamentos
 - ✅ Todo usuário tem um "orçamento padrão" (defaultBudgetId)
-- ✅ Primeiro orçamento criado automaticamente vira padrão
+- ✅ **Registro automático**: Orçamento padrão "Meu Orçamento" criado automaticamente no registro
 - ✅ Orçamentos podem ser compartilhados com outros usuários
 - ✅ Somente proprietário pode compartilhar e deletar orçamentos
 - ✅ Não é possível deletar orçamento que é padrão de algum usuário
 
 ### 2. **Contas Bancárias**
+
 - ✅ Cada conta pertence a um orçamento específico
 - ✅ Tipos suportados: CHECKING, SAVINGS, CREDIT_CARD, INVESTMENT, CASH
 - ✅ Saldo calculado automaticamente com base nas transações
@@ -425,6 +449,7 @@ GET    /budgets/:budgetId/analysis
 ### **FLUXO COMPLETO DE NAVEGAÇÃO ENTRE ORÇAMENTOS**
 
 #### **1. Inicialização do Sistema**
+
 ```
 App.tsx → BudgetProvider carrega:
 ├── Orçamentos compartilhados (sharingService.getActiveShares)
@@ -433,6 +458,7 @@ App.tsx → BudgetProvider carrega:
 ```
 
 #### **2. Seleção de Orçamento**
+
 ```
 BudgetSelector.tsx permite escolher:
 ├── 🏠 "Meu Orçamento" (dados próprios - activeBudget = null)
@@ -442,6 +468,7 @@ BudgetSelector.tsx permite escolher:
 ```
 
 #### **3. Navegação nas Páginas**
+
 ```
 Todas as páginas (Dashboard, Accounts, Categories, Transactions, Reports):
 ├── Usam useBudget() para obter contexto
@@ -452,6 +479,7 @@ Todas as páginas (Dashboard, Accounts, Categories, Transactions, Reports):
 ```
 
 #### **4. Fluxo de API**
+
 ```
 Frontend: accountService.getAccounts(budgetId)
 ├── budgetId = null → GET /api/accounts (orçamento próprio)
@@ -462,10 +490,12 @@ Backend: budgetAuth middleware valida:
 ├── Tem compartilhamento? → Conforme permissão
 └── Não autorizado → 403 Forbidden
 ```
+
 - ✅ Nome único por orçamento não é obrigatório (pode ter contas com mesmo nome)
 - ✅ É possível desativar uma conta com transações associadas
 
 ### 3. **Categorias**
+
 - ✅ Cada categoria pertence a um orçamento específico
 - ✅ Tipos: INCOME (receita) ou EXPENSE (despesa)
 - ✅ Nome único por orçamento (constraint no banco)
@@ -474,6 +504,7 @@ Backend: budgetAuth middleware valida:
 - ✅ É possível desativar uma categoria com transações associadas
 
 ### 4. **Transações**
+
 - ✅ Cada transação pertence a um orçamento, conta e categoria
 - ✅ Tipos: INCOME, EXPENSE, TRANSFER
 - ✅ Validação: conta e categoria devem pertencer ao mesmo orçamento
@@ -482,12 +513,14 @@ Backend: budgetAuth middleware valida:
 - ✅ Atualização automática do saldo das contas (não implementado ainda)
 
 ### 5. **Itens de Orçamento (Planejamento)**
+
 - ✅ Define quanto planeja gastar/receber por categoria
 - ✅ Períodos: MONTHLY, QUARTERLY, YEARLY
 - ✅ Somente um item ativo por categoria/orçamento (constraint unique)
 - ✅ Usado para comparar planejado vs realizado
 
 ### 6. **Sistema de Compartilhamento e Orçamento Ativo**
+
 - ✅ Usuário pode enviar convites para seu orçamento padrão por email
 - ✅ Convite via email (usuário deve existir no sistema)
 - ✅ Status: PENDING → ACCEPTED/REJECTED/REVOKED
@@ -508,6 +541,7 @@ Backend: budgetAuth middleware valida:
 - ✅ Ações baseadas em status: PENDING (revogar), ACCEPTED (remover acesso), REJECTED/REVOKED (visualização)
 
 ### 7. **Sistema de Importação de Extratos**
+
 - ✅ **Formatos Suportados**: CSV, PDF e **🆕 Excel (XLS/XLSX)** - até 10MB
 - ✅ **🆕 Suporte Excel Completo**: ExcelJS para XLSX + node-xlsx para XLS (compatibilidade total)
 - ✅ **🆕 Tratamento Avançado**: RichText, fórmulas, hiperlinks e objetos complexos do Excel
@@ -524,6 +558,7 @@ Backend: budgetAuth middleware valida:
 - ✅ **🆕 Gerenciamento de Sessões**: Visualização e controle completo do estado das importações
 
 #### Fluxo de Importação:
+
 1. **Upload**: Usuário seleciona conta + arquivo (CSV/PDF)
 2. **Processamento**: Sistema extrai transações e detecta duplicatas
 3. **Classificação**: Usuário categoriza cada transação manualmente
@@ -532,12 +567,14 @@ Backend: budgetAuth middleware valida:
 6. **🆕 Cancelamento**: Usuário pode excluir sessões PENDING/ERROR a qualquer momento
 
 #### Detecção de Duplicatas:
+
 - **Duplicata Exata**: Mesmo valor + mesma data
 - **Duplicata Similar**: Mesmo valor + até 3 dias de diferença + 80%+ similaridade na descrição
 - **Algoritmo Levenshtein**: Calcula similaridade entre textos
 - **Flexibilidade**: Usuário pode escolher importar duplicatas ou não
 
 #### 🆕 Gerenciamento de Sessões:
+
 - **Estados Disponíveis**: PENDING, PROCESSING, CLASSIFIED, COMPLETED, ERROR, CANCELLED
 - **Ações Permitidas**:
   - PENDING: Continuar classificação ou Excluir
@@ -549,6 +586,7 @@ Backend: budgetAuth middleware valida:
 - **Validação de Permissões**: Apenas proprietário ou usuários com permissão WRITE podem excluir
 
 ### 8. **Validações de Segurança**
+
 - ✅ Usuário só acessa dados de orçamentos que possui ou que foram compartilhados
 - ✅ Todas as operações validam se entidades pertencem ao orçamento correto
 - ✅ JWT token obrigatório para todas as operações (exceto register/login)
@@ -562,15 +600,20 @@ Backend: budgetAuth middleware valida:
 ## 🔄 FLUXOS DE TRABALHO PRINCIPAIS
 
 ### 1. **Novo Usuário**
+
 ```
 1. POST /api/auth/register (nome, email, senha)
-2. POST /api/auth/login (email, senha) → JWT token
-3. POST /api/budgets (criar primeiro orçamento) → automaticamente vira padrão
-4. POST /api/accounts (criar contas)
-5. POST /api/categories (criar categorias)
+   - ✅ Usuário criado no banco de dados
+   - ✅ Orçamento padrão "Meu Orçamento" criado automaticamente
+   - ✅ Orçamento definido como defaultBudgetId do usuário
+   - ✅ JWT token retornado para login automático
+2. POST /api/accounts (criar contas conforme necessário)
+3. POST /api/categories (criar categorias conforme necessário)
+4. Usuário já tem acesso imediato ao sistema com orçamento funcional
 ```
 
 ### 2. **Compartilhamento de Orçamento**
+
 ```
 Usuário proprietário (enviando convite):
 1. POST /api/sharing/invite (email, permission) → envia convite para orçamento padrão
@@ -587,6 +630,7 @@ Ambos:
 ```
 
 ### 3. **Registro de Transação**
+
 ```
 1. GET /api/accounts (escolher conta)
 2. GET /api/categories (escolher categoria)
@@ -595,6 +639,7 @@ Ambos:
 ```
 
 ### 4. **Planejamento Orçamentário**
+
 ```
 1. GET /api/categories (listar categorias)
 2. POST /api/budgets/items (definir valor planejado por categoria)
@@ -602,6 +647,7 @@ Ambos:
 ```
 
 ### 5. **Importação de Extratos Bancários**
+
 ```
 Usuário:
 1. Acessa /import → Seleciona conta de destino
@@ -626,6 +672,7 @@ Validações automáticas:
 ```
 
 ### 6. **Navegação entre Orçamentos (Orçamento Ativo)**
+
 ```
 Cliente (Frontend):
 1. BudgetContext carrega orçamentos disponíveis automaticamente
@@ -635,7 +682,7 @@ Cliente (Frontend):
 
 Backend (rotas com suporte a orçamento específico):
 - GET /api/budgets/:budgetId/accounts
-- GET /api/budgets/:budgetId/categories  
+- GET /api/budgets/:budgetId/categories
 - GET /api/budgets/:budgetId/transactions
 - GET /api/budgets/:budgetId/dashboard/stats
 - GET /api/budgets/:budgetId/reports
@@ -647,7 +694,9 @@ Backend (rotas com suporte a orçamento específico):
 ## 🧩 COMPONENTES E HOOKS PRINCIPAIS (Frontend)
 
 ### **BudgetContext** (`/contexts/BudgetContext.tsx`)
+
 Context React que gerencia o estado global do orçamento ativo:
+
 ```typescript
 interface BudgetContextType {
   availableBudgets: UserShare[];      # Orçamentos compartilhados disponíveis
@@ -660,58 +709,70 @@ interface BudgetContextType {
 ```
 
 ### **BudgetSelector** (`/components/BudgetSelector.tsx`)
+
 Componente dropdown para seleção de orçamento ativo:
+
 - 🏠 "Meu Orçamento" (dados próprios)
 - 📊 Orçamentos compartilhados (com nome do proprietário + permissão)
 - Salva seleção em cookies automaticamente
 
-### **ShareManager** (`/components/ShareManager.tsx`) 
+### **ShareManager** (`/components/ShareManager.tsx`)
+
 Interface completa de compartilhamento com:
+
 - Lista de convites recebidos (aceitar/rejeitar)
 - Lista de convites enviados (status + ações)
 - Compartilhamentos ativos (separados por direção)
 
 ### **Modificações nas Páginas Principais**
+
 Todas as páginas foram atualizadas para usar o contexto de orçamento ativo:
 
 #### **Dashboard.tsx**
+
 - Usa `useBudget()` para obter orçamento ativo
 - Chama `dashboardService.getStats(budgetId)` com contexto
 - Exibe banner informativo para orçamentos compartilhados
 - Controla permissões para criação rápida de transações
 
 #### **Accounts.tsx**
+
 - Integra com `accountService.getAccounts(budgetId)`
 - Desabilita botões de criar/editar/excluir conforme permissões
 - Banner informativo quando em orçamento compartilhado
 
-#### **Categories.tsx** 
+#### **Categories.tsx**
+
 - Usa `categoryService.getCategories(budgetId)`
 - Controles de permissão para CRUD de categorias
 - Banner contextual com informações do orçamento
 
 #### **Transactions.tsx**
+
 - Integra com `transactionService.getTransactions(budgetId)`
 - Filtra contas e categorias do orçamento ativo
 - Permissões para criar/editar baseadas no contexto
 
 #### **Reports.tsx**
+
 - Chama `reportService.getReports(budgetId)` com contexto de orçamento
 - **5 tipos de relatórios completos** com suporte a orçamentos compartilhados:
   - **Visão Geral**: Dados mensais, categorias, resumo financeiro
   - **Orçamento**: BudgetAnalysis com `budgetId` - análise planejado vs realizado
-  - **Comparação**: PerformanceComparison com `budgetId` - períodos comparativos  
+  - **Comparação**: PerformanceComparison com `budgetId` - períodos comparativos
   - **Previsões**: FinancialForecast com `budgetId` - projeções futuras
   - **Detalhado Diário**: MonthlyDetail com `budgetId` - análise por dia
 - Banner informativo sempre visível para orçamentos compartilhados
 - Todos os componentes recebem `activeBudget?.budgetId` como prop
 
 #### **Budgets.tsx**
+
 - Mantém funcionalidade de gerenciar orçamento próprio
 - ShareManager integrado para compartilhamentos
 - BudgetSelector para navegar entre orçamentos
 
 #### **ImportPage.tsx** - NOVA FUNCIONALIDADE
+
 - **Upload de Arquivos**: Interface drag & drop para CSV/PDF
 - **Seleção de Conta**: Dropdown com contas do orçamento ativo
 - **Preview de Transações**: Lista todas as transações detectadas
@@ -723,27 +784,29 @@ Todas as páginas foram atualizadas para usar o contexto de orçamento ativo:
 - **Permissões**: Respeita contexto de orçamento ativo e permissões WRITE
 
 ### **Hook useBudget**
+
 Hook customizado que encapsula o uso do BudgetContext:
+
 ```typescript
 export const useBudget = () => {
   const context = useContext(BudgetContext);
   if (!context) {
-    throw new Error('useBudget must be used within BudgetProvider');
+    throw new Error("useBudget must be used within BudgetProvider");
   }
   return context;
 };
 ```
 
 ### **Integração no App.tsx**
+
 O BudgetProvider envolve toda a aplicação garantindo acesso global:
+
 ```typescript
 function App() {
   return (
     <BudgetProvider>
       <Router>
-        <Routes>
-          {/* todas as rotas */}
-        </Routes>
+        <Routes>{/* todas as rotas */}</Routes>
       </Router>
     </BudgetProvider>
   );
@@ -751,6 +814,7 @@ function App() {
 ```
 
 ### **Padrão de Uso do Contexto**
+
 ```typescript
 // Em qualquer página/componente
 const { activeBudget, isOwner } = useBudget();
@@ -760,23 +824,29 @@ const budgetId = activeBudget?.budgetId;
 const data = await accountService.getAccounts(budgetId);
 
 // Controle de permissões na interface
-{(isOwner || activeBudget?.permission === 'WRITE') && (
-  <button>Editar</button>
-)}
+{
+  (isOwner || activeBudget?.permission === "WRITE") && <button>Editar</button>;
+}
 ```
 
 ### **Banner Informativo**
+
 Todas as páginas exibem banner quando navegando em orçamento compartilhado:
+
 ```typescript
-{activeBudget && (
-  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-    <Users className="h-5 w-5 text-blue-600 mr-3" />
-    <div>
-      <h3>Visualizando: {activeBudget.budget?.name}</h3>
-      <p>Por {activeBudget.budget?.owner?.name} • {activeBudget.permission}</p>
+{
+  activeBudget && (
+    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <Users className="h-5 w-5 text-blue-600 mr-3" />
+      <div>
+        <h3>Visualizando: {activeBudget.budget?.name}</h3>
+        <p>
+          Por {activeBudget.budget?.owner?.name} • {activeBudget.permission}
+        </p>
+      </div>
     </div>
-  </div>
-)}
+  );
+}
 ```
 
 ### **Componentes de Relatórios Atualizados**
@@ -784,13 +854,15 @@ Todas as páginas exibem banner quando navegando em orçamento compartilhado:
 Todos os componentes de relatórios foram atualizados para suporte completo a orçamentos compartilhados:
 
 #### **FinancialForecast** (`/components/FinancialForecast.tsx`)
+
 ```typescript
 interface FinancialForecastProps {
   period: string;
   budgetId?: string; // ✅ Suporte a orçamento compartilhado
 }
 ```
-- **APIs Padronizadas**: 
+
+- **APIs Padronizadas**:
   - `/api/reports/forecast` (orçamento próprio)
   - `/api/budgets/${budgetId}/reports/forecast` (compartilhado)
   - **Ambas retornam formato idêntico**: `{ data: { forecastData, summary } }`
@@ -798,45 +870,54 @@ interface FinancialForecastProps {
 - **Simplificação**: Código único para ambos os tipos de orçamento
 
 #### **BudgetAnalysis** (`/components/BudgetAnalysis.tsx`)
+
 ```typescript
 interface BudgetAnalysisProps {
   period: string;
   budgetId?: string; // ✅ Atualizado para orçamentos compartilhados
 }
 ```
+
 - **APIs**: `/api/budgets/${budgetId}/analysis` para compartilhados
 - **Funcionalidades**: Análise planejado vs realizado por categoria
 - **Validação**: Middleware budgetAuth para permissões
 
 #### **PerformanceComparison** (`/components/PerformanceComparison.tsx`)
+
 ```typescript
 interface PerformanceComparisonProps {
   selectedPeriod: string;
   budgetId?: string; // ✅ Preparado para orçamentos compartilhados
 }
 ```
+
 - **APIs**: `/api/reports/comparison/${budgetId}` (rota existente)
 
 #### **MonthlyDetail** (`/components/MonthlyDetail.tsx`)
+
 ```typescript
 interface MonthlyDetailProps {
   selectedMonth: string;
   budgetId?: string; // ✅ Já preparado para orçamentos compartilhados
 }
 ```
+
 - **APIs**: `/api/reports/monthly-detail/${budgetId}` (rota existente)
 
 ### **Padrão de Integração nos Relatórios**
+
 ```typescript
 // Em Reports.tsx - todos os componentes recebem budgetId
 const { activeBudget } = useBudget();
 
-{activeReport === 'forecast' && (
-  <FinancialForecast 
-    period={viewMode === 'monthly' ? selectedMonth : selectedPeriod} 
-    budgetId={activeBudget?.budgetId}
-  />
-)}
+{
+  activeReport === "forecast" && (
+    <FinancialForecast
+      period={viewMode === "monthly" ? selectedMonth : selectedPeriod}
+      budgetId={activeBudget?.budgetId}
+    />
+  );
+}
 ```
 
 ---
@@ -844,36 +925,43 @@ const { activeBudget } = useBudget();
 ## 🎨 PADRÕES DE CÓDIGO
 
 ### Backend (TypeScript + Express)
+
 ```typescript
 // Estrutura padrão de route
-router.method('path', auth, [middleware], async (req: AuthRequest, res: Response): Promise<void> => {
-  try {
-    // 1. Validação de entrada (Joi)
-    const { error, value } = schema.validate(req.body);
-    if (error) {
-      res.status(400).json({ message: error.details[0]?.message });
-      return;
+router.method(
+  "path",
+  auth,
+  [middleware],
+  async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      // 1. Validação de entrada (Joi)
+      const { error, value } = schema.validate(req.body);
+      if (error) {
+        res.status(400).json({ message: error.details[0]?.message });
+        return;
+      }
+
+      // 2. Buscar orçamento padrão (quando aplicável)
+      const user = await prisma.user.findUnique({
+        where: { id: req.user!.id },
+        select: { defaultBudgetId: true },
+      });
+
+      // 3. Validações de negócio
+      // 4. Operação no banco (Prisma)
+      // 5. Resposta
+
+      res.json(result);
+    } catch (error) {
+      console.error("Error in [operation]:", error);
+      res.status(500).json({ message: "Internal server error" });
     }
-
-    // 2. Buscar orçamento padrão (quando aplicável)
-    const user = await prisma.user.findUnique({
-      where: { id: req.user!.id },
-      select: { defaultBudgetId: true }
-    });
-
-    // 3. Validações de negócio
-    // 4. Operação no banco (Prisma)
-    // 5. Resposta
-
-    res.json(result);
-  } catch (error) {
-    console.error('Error in [operation]:', error);
-    res.status(500).json({ message: 'Internal server error' });
   }
-});
+);
 ```
 
 ### Frontend (React + TypeScript)
+
 ```typescript
 // Estrutura de componente
 interface ComponentProps {
@@ -883,21 +971,18 @@ interface ComponentProps {
 export const Component: React.FC<ComponentProps> = ({ props }) => {
   // hooks (React Query para APIs)
   const { data, isLoading, error } = useQuery({
-    queryKey: ['key'],
-    queryFn: () => api.getData()
+    queryKey: ["key"],
+    queryFn: () => api.getData(),
   });
 
   // lógica do componente
-  
-  return (
-    <div className="tailwind-classes">
-      {/* JSX */}
-    </div>
-  );
+
+  return <div className="tailwind-classes">{/* JSX */}</div>;
 };
 ```
 
 #### 🆕 **Recharts v3 - Mudanças Importantes**
+
 ```typescript
 // ⚠️ IMPORTANTE: Recharts v3 exige index signature nos dados
 interface CategoryData {
@@ -909,12 +994,12 @@ interface CategoryData {
 
 // ✅ Uso correto com PieChart
 <PieChart width={400} height={400}>
-  <Pie 
-    data={categoryData}  // Agora funciona com index signature
+  <Pie
+    data={categoryData} // Agora funciona com index signature
     dataKey="value"
     nameKey="name"
   />
-</PieChart>
+</PieChart>;
 ```
 
 ### 📱 REGRAS DE RESPONSIVIDADE (OBRIGATÓRIAS)
@@ -922,10 +1007,11 @@ interface CategoryData {
 **TODAS as páginas e componentes devem ser totalmente responsivos e seguir estas regras:**
 
 #### 🎯 Breakpoints do Tailwind
+
 ```css
 /* Mobile First - Padrão sem prefixo */
 /* sm: 640px+ (tablet pequeno) */
-/* md: 768px+ (tablet) */  
+/* md: 768px+ (tablet) */
 /* lg: 1024px+ (desktop pequeno) */
 /* xl: 1280px+ (desktop) */
 /* 2xl: 1536px+ (desktop grande) */
@@ -934,24 +1020,28 @@ interface CategoryData {
 #### 📐 Layout de Navegação por Dispositivo
 
 **📱 Mobile (< 768px):**
+
 - ✅ Menu principal **OCULTO** por padrão
 - ✅ Hamburger menu (3 linhas) para abrir menu lateral
 - ✅ Menu lateral deslizante (drawer/sidebar)
 - ✅ Conteúdo ocupa toda a largura disponível
 
 **📟 Tablet (768px - 1024px):**
+
 - ✅ Menu na **BARRA INFERIOR** (bottom navigation)
 - ✅ Ícones + labels nos itens do menu
 - ✅ Conteúdo principal acima da barra de navegação
 - ✅ Layout em 2 colunas quando possível
 
 **🖥️ Desktop (1024px+):**
+
 - ✅ Menu lateral **SEMPRE VISÍVEL** (sidebar permanente)
 - ✅ Largura fixa do sidebar (ex: 250px)
 - ✅ Conteúdo principal ao lado do menu
 - ✅ Layout em 3-4 colunas quando apropriado
 
 #### 🚫 REGRA CRÍTICA: Overflow Horizontal
+
 ```typescript
 // ❌ NUNCA fazer isso - pode causar scroll horizontal
 <div className="w-[1200px]">           // Largura fixa
@@ -967,6 +1057,7 @@ interface CategoryData {
 #### 🔄 Transformação de Layout
 
 **Linha → Coluna (Responsivo):**
+
 ```typescript
 // ✅ Padrão para cards, forms, listas
 <div className="flex flex-col md:flex-row gap-4">
@@ -983,6 +1074,7 @@ interface CategoryData {
 ```
 
 **Tabelas → Cards (Mobile):**
+
 ```typescript
 // ✅ Tabela desktop, cards mobile
 <div className="hidden md:block">
@@ -996,15 +1088,15 @@ interface CategoryData {
 #### 📏 Classes Tailwind Obrigatórias
 
 **Container Principal:**
+
 ```typescript
 <div className="min-h-screen bg-gray-50">
-  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    {/* Conteúdo */}
-  </div>
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">{/* Conteúdo */}</div>
 </div>
 ```
 
 **Cards/Componentes:**
+
 ```typescript
 <div className="bg-white rounded-lg shadow p-4 md:p-6">
   {/* Conteúdo do card */}
@@ -1012,6 +1104,7 @@ interface CategoryData {
 ```
 
 **Formulários:**
+
 ```typescript
 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
   <input className="w-full px-3 py-2 border rounded-md" />
@@ -1019,6 +1112,7 @@ interface CategoryData {
 ```
 
 **Botões:**
+
 ```typescript
 <button className="w-full md:w-auto px-4 py-2 bg-blue-600 text-white rounded-md">
   Ação
@@ -1028,6 +1122,7 @@ interface CategoryData {
 #### 🎨 Menu de Navegação - Implementação
 
 **Mobile (Hamburger + Sidebar):**
+
 ```typescript
 const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -1046,7 +1141,10 @@ return (
     {/* Sidebar mobile */}
     {mobileMenuOpen && (
       <div className="md:hidden fixed inset-0 z-50">
-        <div className="fixed inset-0 bg-black opacity-50" onClick={() => setMobileMenuOpen(false)} />
+        <div
+          className="fixed inset-0 bg-black opacity-50"
+          onClick={() => setMobileMenuOpen(false)}
+        />
         <div className="fixed left-0 top-0 bottom-0 w-64 bg-white">
           {/* Menu items */}
         </div>
@@ -1057,13 +1155,12 @@ return (
 ```
 
 **Tablet (Bottom Navigation):**
+
 ```typescript
 return (
   <div className="min-h-screen pb-16 md:pb-0">
     {/* Conteúdo principal */}
-    <main className="p-4">
-      {children}
-    </main>
+    <main className="p-4">{children}</main>
 
     {/* Bottom navigation - só no tablet */}
     <nav className="hidden sm:block md:hidden fixed bottom-0 left-0 right-0 bg-white border-t">
@@ -1079,6 +1176,7 @@ return (
 ```
 
 **Desktop (Sidebar Permanente):**
+
 ```typescript
 return (
   <div className="hidden lg:flex min-h-screen">
@@ -1095,9 +1193,7 @@ return (
     </nav>
 
     {/* Conteúdo principal */}
-    <main className="flex-1 overflow-hidden">
-      {children}
-    </main>
+    <main className="flex-1 overflow-hidden">{children}</main>
   </div>
 );
 ```
@@ -1105,8 +1201,9 @@ return (
 #### ✅ Checklist de Responsividade
 
 **Para cada componente criado, verificar:**
+
 - [ ] Funciona corretamente em mobile (< 768px)
-- [ ] Funciona corretamente em tablet (768px - 1024px) 
+- [ ] Funciona corretamente em tablet (768px - 1024px)
 - [ ] Funciona corretamente em desktop (> 1024px)
 - [ ] Não possui scroll horizontal em nenhum dispositivo
 - [ ] Menu segue o padrão por dispositivo
@@ -1124,6 +1221,7 @@ return (
 ### 💡 **Estados de Interface**
 
 #### 1. **Estados Vazios (Empty States)**
+
 - ✅ Sempre mostrar interfaces informativas quando não há dados
 - ✅ Incluir ícones explicativos (não apenas texto)
 - ✅ Fornecer ações sugeridas (CTAs) nos estados vazios
@@ -1140,7 +1238,8 @@ return (
       Nenhum compartilhamento encontrado
     </h3>
     <p className="text-gray-500 mb-6 max-w-md mx-auto">
-      Você ainda não possui compartilhamentos ativos. Comece convidando outro usuário.
+      Você ainda não possui compartilhamentos ativos. Comece convidando outro
+      usuário.
     </p>
     <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg">
       Convidar Primeiro Usuário
@@ -1150,6 +1249,7 @@ return (
 ```
 
 #### 2. **Tratamento de Erros**
+
 - ✅ **NUNCA** usar `alert()` - sempre usar toast notifications (Sonner)
 - ✅ Distinguir entre "sem dados" e "erro de conectividade"
 - ✅ Fornecer opções de retry em caso de erro
@@ -1166,42 +1266,46 @@ try {
   } else {
     // Erro real - mostrar interface de erro
     setHasError(true);
-    toast.error(error?.response?.data?.message || 'Erro ao carregar dados');
+    toast.error(error?.response?.data?.message || "Erro ao carregar dados");
   }
 }
 ```
 
 #### 3. **Loading States**
+
 - ✅ Sempre mostrar feedback visual durante carregamento
 - ✅ Usar skeletons para listas/cards
 - ✅ Usar spinners para ações pontuais
 
 ```typescript
 // ✅ Loading bem implementado
-{loading && (
-  <div className="flex justify-center items-center h-64">
-    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-  </div>
-)}
+{
+  loading && (
+    <div className="flex justify-center items-center h-64">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+    </div>
+  );
+}
 ```
 
 ### 🔔 **Sistema de Notificações**
 
 **Usar Sonner Toast:**
+
 ```typescript
-import { toast } from 'sonner';
+import { toast } from "sonner";
 
 // ✅ Sucesso
-toast.success('Dados salvos com sucesso!');
+toast.success("Dados salvos com sucesso!");
 
 // ✅ Erro
-toast.error('Erro ao salvar dados');
+toast.error("Erro ao salvar dados");
 
 // ✅ Loading
-toast.loading('Salvando...');
+toast.loading("Salvando...");
 
 // ❌ NUNCA usar alert
-alert('Mensagem'); // PROIBIDO
+alert("Mensagem"); // PROIBIDO
 ```
 
 ---
@@ -1217,8 +1321,8 @@ interface BudgetShare {
   id: string;
   budgetId: string;
   sharedWithId: string;
-  permission: 'READ' | 'WRITE';
-  status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'REVOKED';
+  permission: "READ" | "WRITE";
+  status: "PENDING" | "ACCEPTED" | "REJECTED" | "REVOKED";
   createdAt: string;
   updatedAt: string;
   budget?: {
@@ -1239,11 +1343,11 @@ interface BudgetShare {
 }
 
 const ShareManager: React.FC = () => {
-  const [invitations, setInvitations] = useState<BudgetShare[]>([]);      // Convites recebidos
-  const [sentInvitations, setSentInvitations] = useState<BudgetShare[]>([]);  // Convites enviados
+  const [invitations, setInvitations] = useState<BudgetShare[]>([]); // Convites recebidos
+  const [sentInvitations, setSentInvitations] = useState<BudgetShare[]>([]); // Convites enviados
   const [activeShares, setActiveShares] = useState({
-    sharedByMe: [],     // Orçamentos que compartilhei
-    sharedWithMe: []    // Orçamentos compartilhados comigo
+    sharedByMe: [], // Orçamentos que compartilhei
+    sharedWithMe: [], // Orçamentos compartilhados comigo
   });
 
   // Três APIs principais
@@ -1256,6 +1360,7 @@ const ShareManager: React.FC = () => {
 ```
 
 **Seções da Interface:**
+
 1. **Convites Recebidos**: Cards com ações Aceitar/Rejeitar
 2. **Convites Enviados**: Cards com status colorido + ações baseadas no status:
    - `PENDING`: Botão "Revogar Convite" (amarelo)
@@ -1264,6 +1369,7 @@ const ShareManager: React.FC = () => {
 3. **Compartilhamentos Ativos**: Separados em "Por mim" e "Comigo"
 
 **Padrões de Design:**
+
 ```typescript
 // Status colors
 const statusColors = {
@@ -1274,7 +1380,7 @@ const statusColors = {
 };
 
 // Responsive cards
-className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow 
+className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow
           border-l-4 border-l-blue-500"
 
 // Mobile-first grid
@@ -1348,10 +1454,12 @@ export const importService = {
 ```
 
 ### **Persistência em Cookies**
+
 O sistema salva automaticamente a seleção do orçamento ativo:
+
 ```typescript
 // BudgetContext.tsx
-const COOKIE_NAME = 'active_budget_id';
+const COOKIE_NAME = "active_budget_id";
 
 // Salvar seleção
 const setActiveBudget = (budget: UserShare | null) => {
@@ -1368,37 +1476,47 @@ const savedBudgetId = Cookies.get(COOKIE_NAME);
 ```
 
 ### **Controles de Permissão por Página**
+
 Cada página implementa controles específicos baseados no contexto:
 
 ```typescript
 // Padrão usado em todas as páginas
 const { activeBudget, isOwner } = useBudget();
-const canWrite = isOwner || activeBudget?.permission === 'WRITE';
-const canRead = isOwner || activeBudget?.permission === 'READ' || activeBudget?.permission === 'WRITE';
+const canWrite = isOwner || activeBudget?.permission === "WRITE";
+const canRead =
+  isOwner ||
+  activeBudget?.permission === "READ" ||
+  activeBudget?.permission === "WRITE";
 
 // Exemplos de uso:
 // Botões de ação
-{canWrite && (
-  <button onClick={handleCreate}>Criar Novo</button>
-)}
+{
+  canWrite && <button onClick={handleCreate}>Criar Novo</button>;
+}
 
 // Formulários de edição
-{canWrite ? (
-  <input type="text" />
-) : (
-  <span className="text-gray-600">{value}</span>
-)}
+{
+  canWrite ? (
+    <input type="text" />
+  ) : (
+    <span className="text-gray-600">{value}</span>
+  );
+}
 
 // Ações de exclusão
-{canWrite && (
-  <button onClick={handleDelete} className="text-red-600">
-    Excluir
-  </button>
-)}
+{
+  canWrite && (
+    <button onClick={handleDelete} className="text-red-600">
+      Excluir
+    </button>
+  );
+}
 ```
 
 ### **Layout.tsx Integração**
+
 O Layout principal integra o BudgetSelector e gerencia a exibição:
+
 ```typescript
 // Layout.tsx inclui:
 // 1. BudgetSelector no header/sidebar
@@ -1411,36 +1529,40 @@ O Layout principal integra o BudgetSelector e gerencia a exibição:
 ## 🚨 PONTOS DE ATENÇÃO PARA O COPILOT
 
 ### Sempre Validar
+
 1. **Orçamento padrão**: Usuário sempre deve ter defaultBudgetId válido
 2. **Permissões**: Verificar se usuário tem acesso ao orçamento
 3. **Relacionamentos**: Contas/categorias/transações pertencem ao mesmo orçamento
 4. **Constraint uniqueness**: Nome de categoria único por orçamento
 
 ### Padrão de APIs Padronizadas
+
 5. **Formato Unificado**: Rotas paralelas (`/api/resource` vs `/api/budgets/:id/resource`) devem retornar estruturas idênticas
 6. **Estrutura de Resposta**: Sempre usar `{ data: { ... } }` para consistência
 7. **Campos Obrigatórios**: Manter campos essenciais iguais entre rotas próprias e compartilhadas
 
 ### Padrões de Resposta
+
 ```typescript
 // Sucesso
 res.json(data);
 res.status(201).json(createdData);
 
 // Erro de validação
-res.status(400).json({ message: 'Validation error message' });
+res.status(400).json({ message: "Validation error message" });
 
 // Não encontrado
-res.status(404).json({ message: 'Resource not found' });
+res.status(404).json({ message: "Resource not found" });
 
 // Sem permissão
-res.status(403).json({ message: 'Permission denied' });
+res.status(403).json({ message: "Permission denied" });
 
 // Erro interno
-res.status(500).json({ message: 'Internal server error' });
+res.status(500).json({ message: "Internal server error" });
 ```
 
 ### Middleware Obrigatório
+
 - `auth`: Para todas as rotas protegidas
 - `budgetAuth`: Para rotas com `:budgetId`
 - `requireWritePermission`: Para operações de escrita em orçamentos compartilhados
@@ -1451,16 +1573,19 @@ res.status(500).json({ message: 'Internal server error' });
 ## 📝 CONVENÇÕES DE NOMENCLATURA
 
 ### Banco de Dados
+
 - Tabelas: snake_case (users, budget_items, budget_shares)
 - Campos: camelCase (defaultBudgetId, createdAt)
 - Enums: UPPER_CASE (CHECKING, MONTHLY, PENDING)
 
 ### TypeScript
+
 - Interfaces: PascalCase (User, BudgetAuthRequest)
 - Variáveis: camelCase (budgetId, userData)
 - Constantes: UPPER_CASE (JWT_SECRET)
 
 ### Rotas
+
 - Endpoints: kebab-case (/monthly-detail, /set-default)
 - Parâmetros: camelCase (:budgetId, :shareId)
 
@@ -1469,6 +1594,7 @@ res.status(500).json({ message: 'Internal server error' });
 ## 🔧 COMANDOS ÚTEIS
 
 ### Docker
+
 ```bash
 docker-compose up -d          # Iniciar serviços
 docker-compose logs server    # Logs do backend
@@ -1476,6 +1602,7 @@ docker-compose logs client    # Logs do frontend
 ```
 
 ### Banco de Dados (Prisma)
+
 ```bash
 cd server
 npx prisma migrate dev        # Aplicar migrações
@@ -1484,11 +1611,12 @@ npx prisma studio            # Interface visual
 ```
 
 ### Desenvolvimento
+
 ```bash
 # Backend
 cd server && npm run dev     # Desenvolvimento com nodemon
 
-# Frontend  
+# Frontend
 cd client && npm run dev     # Desenvolvimento com Vite
 ```
 
@@ -1499,21 +1627,25 @@ cd client && npm run dev     # Desenvolvimento com Vite
 O sistema possui os seguintes usuários de teste configurados no banco de dados:
 
 ### Credenciais Padrão
+
 **Senha padrão para todos os usuários:** `123456`
 
 ### Usuários Disponíveis
 
 1. **João Silva**
+
    - Email: `joao@example.com`
    - ID: `cmfb1z9fc0000dm80vlhtkur9`
    - Senha: `123456`
 
 2. **Maria Santos**
+
    - Email: `maria@example.com`
    - ID: `cmfb1z9fu0001dm80n5cwjf5u`
    - Senha: `123456`
 
 3. **Pedro Costa**
+
    - Email: `pedro@example.com`
    - ID: `cmfb1z9fz0002dm802es6wf59`
    - Senha: `123456`
@@ -1524,6 +1656,7 @@ O sistema possui os seguintes usuários de teste configurados no banco de dados:
    - Senha: `123456`
 
 ### Exemplo de Login via API
+
 ```bash
 # PowerShell
 $loginData = @{ email = 'joao@example.com'; password = '123456' } | ConvertTo-Json
@@ -1542,6 +1675,7 @@ curl -X POST http://localhost:3001/api/auth/login \
 ### ✅ **FUNCIONALIDADES IMPLEMENTADAS E TESTADAS**
 
 #### **Frontend (React + TypeScript)**
+
 - ✅ **BudgetContext**: Sistema de contexto global para gerenciamento de orçamento ativo
 - ✅ **BudgetProvider**: Provider que envolve toda aplicação no App.tsx
 - ✅ **useBudget Hook**: Hook customizado para acesso ao contexto
@@ -1551,6 +1685,7 @@ curl -X POST http://localhost:3001/api/auth/login \
 - ✅ **Controles de Permissão**: UI adaptada conforme READ/WRITE em cada página
 
 #### **Páginas Atualizadas**
+
 - ✅ **Dashboard.tsx**: Estatísticas e criação rápida com contexto de orçamento
 - ✅ **Accounts.tsx**: Listagem e CRUD de contas com controles de permissão
 - ✅ **Categories.tsx**: Gestão de categorias respeitando orçamento ativo
@@ -1560,20 +1695,22 @@ curl -X POST http://localhost:3001/api/auth/login \
 - ✅ **Layout.tsx**: BudgetSelector integrado no header/navegação
 
 #### **API Services (Frontend)**
+
 - ✅ **dashboardService.getStats(budgetId?)**: Estatísticas com contexto opcional
-- ✅ **accountService.**(budgetId?)**: Todos os métodos CRUD suportam orçamento específico
-- ✅ **categoryService.**(budgetId?)**: CRUD completo com contexto
-- ✅ **transactionService.**(budgetId?)**: Gestão de transações por orçamento
+- ✅ **accountService.**(budgetId?)\*\*: Todos os métodos CRUD suportam orçamento específico
+- ✅ **categoryService.**(budgetId?)\*\*: CRUD completo com contexto
+- ✅ **transactionService.**(budgetId?)\*\*: Gestão de transações por orçamento
 - ✅ **reportService.getReports(budgetId?)**: Relatórios contextualizados
 
 #### **Backend (Node.js + Express + TypeScript)**
+
 - ✅ **budgetAuth Middleware**: Validação automática de permissões por orçamento
 - ✅ **Rotas Específicas**: GET/POST/PUT/DELETE em `/api/budgets/:budgetId/*`
 - ✅ **Validação de Acesso**: Proprietário (total) vs Compartilhado (READ/WRITE)
 - ✅ **APIs Implementadas**:
   - `/budgets/:budgetId/dashboard/stats`
   - `/budgets/:budgetId/accounts` (+ CRUD completo)
-  - `/budgets/:budgetId/categories` (+ CRUD completo)  
+  - `/budgets/:budgetId/categories` (+ CRUD completo)
   - `/budgets/:budgetId/transactions` (+ CRUD completo)
   - `/budgets/:budgetId/reports` (relatórios gerais)
   - `/budgets/:budgetId/reports/export` (exportação)
@@ -1581,12 +1718,14 @@ curl -X POST http://localhost:3001/api/auth/login \
   - `/budgets/:budgetId/analysis` (análise orçamentária)
 
 #### **Sistema de Compartilhamento**
+
 - ✅ **ShareManager**: Interface completa para convites e permissões
 - ✅ **Convites**: Envio, aceitação, rejeição de compartilhamentos
 - ✅ **Permissões**: READ (visualização) e WRITE (edição completa)
 - ✅ **Gestão Ativa**: Revogação de acessos compartilhados
 
 ### 🔄 **FLUXO VALIDADO**
+
 1. ✅ Usuário pode alternar entre "Meu Orçamento" e orçamentos compartilhados
 2. ✅ Todas as páginas carregam dados corretos conforme seleção
 3. ✅ Controles de UI respeitam permissões (READ = só visualização, WRITE = edição)
@@ -1595,6 +1734,7 @@ curl -X POST http://localhost:3001/api/auth/login \
 6. ✅ APIs backend validam permissões automaticamente
 
 ### 📋 **REQUISITO ORIGINAL ATENDIDO**
+
 > **"1 usuário pode acessar o orçamento compartilhado e navegar por todas as funcionalidades do sistema para visualizar/editar os dados do orçamento compartilhado"**
 
 **✅ IMPLEMENTAÇÃO COMPLETA**: Sistema permite navegação completa em orçamentos compartilhados com controles apropriados de permissão em todas as funcionalidades (Dashboard, Contas, Categorias, Transações, Relatórios).
@@ -1602,24 +1742,28 @@ curl -X POST http://localhost:3001/api/auth/login \
 ### 🚀 **CORREÇÕES RECENTES - SISTEMA DE RELATÓRIOS**
 
 #### **Problemas Resolvidos (Setembro 2025)**
+
 - ✅ **FinancialForecast**: Corrigido para orçamentos compartilhados
+
   - Rota: `/api/budgets/:budgetId/reports/forecast`
   - Frontend atualizado para usar budgetId correto
   - Backend implementa cálculos de previsão completos
 
 - ✅ **BudgetAnalysis**: Atualizado com suporte completo
+
   - Rota: `/api/budgets/:budgetId/analysis`
   - Interface atualizada para aceitar budgetId
   - Análise planejado vs realizado por categoria
 
-- ✅ **Todos os Componentes de Relatórios**: 
+- ✅ **Todos os Componentes de Relatórios**:
   - PerformanceComparison, MonthlyDetail, FinancialForecast, BudgetAnalysis
   - Todos recebem `budgetId={activeBudget?.budgetId}` do Reports.tsx
   - Validação de permissões via middleware budgetAuth
 
 #### **5 Tipos de Relatórios Funcionais**
+
 1. **Visão Geral** ✅ - Dados mensais, resumo financeiro
-2. **Orçamento** ✅ - Análise categoria por categoria  
+2. **Orçamento** ✅ - Análise categoria por categoria
 3. **Comparação** ✅ - Performance entre períodos
 4. **Previsões** ✅ - Projeções futuras com IA
 5. **Detalhado** ✅ - Análise diária do mês
@@ -1631,7 +1775,9 @@ curl -X POST http://localhost:3001/api/auth/login \
 ## 📝 **ATUALIZAÇÕES DO CONTEXTO**
 
 ### **Setembro 8, 2025 - Sistema de Relatórios Compartilhados**
+
 **Mudanças Implementadas:**
+
 - ✅ Novas rotas backend: `/budgets/:budgetId/reports/forecast` e `/budgets/:budgetId/analysis`
 - ✅ Componentes atualizados: FinancialForecast, BudgetAnalysis com suporte a budgetId
 - ✅ Props padronizadas: Todos os componentes de relatórios recebem budgetId opcional
@@ -1641,13 +1787,16 @@ curl -X POST http://localhost:3001/api/auth/login \
 **Resultado:** Sistema de relatórios 100% funcional para orçamentos compartilhados e próprios.
 
 ### **Setembro 8, 2025 - Padronização das APIs de Relatórios**
+
 **Mudanças Implementadas:**
+
 - ✅ **Formato Unificado**: `/api/reports/forecast` e `/api/budgets/:budgetId/reports/forecast`
 - ✅ **Estrutura Padronizada**: Ambas retornam `{ data: { forecastData: [...], summary: {...} } }`
 - ✅ **Simplificação Frontend**: FinancialForecast não precisa mais lidar com formatos diferentes
 - ✅ **Consistência**: Todas as rotas de relatórios seguem o mesmo padrão de resposta
 
 **Formato Padrão das APIs de Previsão:**
+
 ```typescript
 {
   data: {
@@ -1661,7 +1810,7 @@ curl -X POST http://localhost:3001/api/auth/login \
     summary: {
       nextMonthPrediction: number;
       growthRate: number;
-      trend: 'up' | 'down' | 'stable';
+      trend: "up" | "down" | "stable";
       confidence: number;
       recommendation: string;
     }
@@ -1680,6 +1829,7 @@ Esse contexto deve ser usado como referência para todas as interações com o s
 ### **Setembro 10, 2025 - Sistema Completo de Importação de Arquivos**
 
 #### **✅ Backend Implementado:**
+
 - **Novos Modelos Prisma**: ImportSession, TempTransaction com enums de status
 - **Parsers Avançados**: CSVParser e PDFParser com suporte aos principais bancos brasileiros
 - **Detecção de Duplicatas**: DuplicateDetector com algoritmo de similaridade Levenshtein
@@ -1689,6 +1839,7 @@ Esse contexto deve ser usado como referência para todas as interações com o s
 - **Encoding Inteligente**: Detecção automática de UTF-8, ISO-8859-1, Windows-1252
 
 #### **✅ Frontend Implementado:**
+
 - **ImportPage Responsiva**: Interface completa para upload e classificação
 - **Drag & Drop**: Upload intuitivo de arquivos com preview
 - **Classificação Manual**: Interface para categorizar transações uma a uma
@@ -1698,6 +1849,7 @@ Esse contexto deve ser usado como referência para todas as interações com o s
 - **Services Completos**: importService com todas as APIs necessárias
 
 #### **✅ Funcionalidades Testadas:**
+
 1. **Upload de Arquivos**: CSV e PDF com validação de formato
 2. **Processamento**: Extração de transações com dados limpos
 3. **Detecção de Duplicatas**: Identificação baseada em valor, data e similaridade
@@ -1707,12 +1859,14 @@ Esse contexto deve ser usado como referência para todas as interações com o s
 7. **Permissões**: Funciona corretamente com orçamentos compartilhados
 
 #### **📋 Formatos Suportados:**
+
 - **CSV**: Banco do Brasil, Itaú, Nubank, Santander, formato genérico
 - **PDF**: Faturas de cartão com extração via regex pattern
 - **Encoding**: Detecção automática e conversão de caracteres
 - **Validações**: Datas brasileiras (DD/MM/YYYY), valores monetários com vírgula
 
 #### **🔒 Segurança Implementada:**
+
 - Validação de tipos de arquivo permitidos
 - Limite de tamanho (10MB)
 - Sanitização de dados extraídos
@@ -1722,7 +1876,9 @@ Esse contexto deve ser usado como referência para todas as interações com o s
 **Status:** Sistema de importação totalmente funcional e integrado ao ecossistema existente.
 
 ### **Setembro 10, 2025 - Correções de Estrutura e Integração**
+
 **Mudanças Implementadas:**
+
 - ✅ **Estrutura de Rotas Corrigida**: Movidas rotas de orçamentos específicos de `/api/import/:budgetId/*` para `/api/budgets/:budgetId/import/*` (arquivo `budgets.ts`)
 - ✅ **BudgetContext Corrigido**: Corrigida estrutura de acesso no frontend de `activeBudget?.budget?.id` para `activeBudget?.budgetId`
 - ✅ **ImportPage Atualizada**: Interface totalmente responsiva com controles de permissão para orçamentos compartilhados
@@ -1730,12 +1886,14 @@ Esse contexto deve ser usado como referência para todas as interações com o s
 - ✅ **Documentação Atualizada**: Correção de todas as referências incorretas na documentação do contexto
 
 #### **Arquivos Modificados:**
+
 - `server/src/routes/budgets.ts`: Adicionadas rotas de importação com middleware de segurança
 - `server/src/routes/import.ts`: Removidas rotas duplicadas incorretas
 - `client/src/pages/ImportPage.tsx`: Corrigida estrutura de acesso ao budgetId
 - `.github/copilot/copilot-context.md`: Atualizada documentação com estruturas corretas
 
 #### **Verificação de Funcionalidades:**
+
 - ✅ **Upload**: Funciona corretamente com orçamentos próprios e compartilhados
 - ✅ **Classificação**: Validação de permissões implementada
 - ✅ **Confirmação**: Controles de acesso para usuários READ-only
@@ -1747,6 +1905,7 @@ Esse contexto deve ser usado como referência para todas as interações com o s
 ## � **SISTEMA DE IMPORTAÇÃO DE EXTRATOS**
 
 ### **Funcionalidades Implementadas**
+
 - ✅ **Upload Seguro**: Validação de tipos de arquivo e tamanho (até 10MB)
 - ✅ **Múltiplos Formatos**: CSV, PDF, Excel (.xls/.xlsx)
 - ✅ **Filtro por Período**: Importação opcional por intervalo de datas
@@ -1755,6 +1914,7 @@ Esse contexto deve ser usado como referência para todas as interações com o s
 - ✅ **Detecção de Duplicatas**: Sistema avançado baseado em múltiplos critérios
 
 ### **Bancos Suportados**
+
 - ✅ **Nubank**: Conta corrente e cartão de crédito (CSV)
 - ✅ **BTG Pactual**: Conta corrente (Excel) e investimentos (PDF)
 - ✅ **Bradesco**: Conta corrente e poupança (CSV com encoding automático)
@@ -1765,24 +1925,29 @@ Esse contexto deve ser usado como referência para todas as interações com o s
 - ✅ **XP Investimentos**: Conta corrente, investimentos e cartão (CSV)
 
 ### **Arquitetura de Parsers**
+
 ```typescript
 // Interface base para todos os parsers
 export abstract class BankParser {
-    abstract canParse(filePath: string, firstLines: string[]): boolean;
-    abstract parseFile(filePath: string, options?: ParseOptions): Promise<ParseResult>;
+  abstract canParse(filePath: string, firstLines: string[]): boolean;
+  abstract parseFile(
+    filePath: string,
+    options?: ParseOptions
+  ): Promise<ParseResult>;
 }
 
 // Opções de parsing com filtro por data
 interface ParseOptions {
-    dateRange?: {
-        startDate?: Date;
-        endDate?: Date;
-    };
-    skipDuplicates?: boolean;
+  dateRange?: {
+    startDate?: Date;
+    endDate?: Date;
+  };
+  skipDuplicates?: boolean;
 }
 ```
 
 ### **Fluxo de Importação**
+
 1. **Upload**: Arquivo enviado e validado
 2. **Parsing**: Detecção automática do banco e extração de transações
 3. **Filtro de Data**: Aplicação opcional do período selecionado
@@ -1791,6 +1956,7 @@ interface ParseOptions {
 6. **Confirmação**: Importação final para o banco de dados
 
 ### **Interface de Usuário**
+
 - ✅ **Drag & Drop**: Upload intuitivo de arquivos
 - ✅ **Seleção de Conta**: Destino das transações importadas
 - ✅ **Filtro por Período**: Checkbox opcional com campos de data
@@ -1802,21 +1968,25 @@ interface ParseOptions {
 ## �📚 **MELHORES PRÁTICAS IMPLEMENTADAS**
 
 ### **Estrutura de Rotas RESTful**
+
 - ✅ **Recursos Próprios**: `/api/{resource}` (ex: `/api/accounts`)
 - ✅ **Recursos de Orçamento**: `/api/budgets/:budgetId/{resource}` (ex: `/api/budgets/123/accounts`)
 - ✅ **Sub-recursos**: `/api/budgets/:budgetId/import/sessions` (importação dentro de orçamentos)
 
 ### **Contexto de Orçamento**
+
 - ✅ **Estrutura Correta**: `activeBudget?.budgetId` (não `activeBudget?.budget?.id`)
 - ✅ **Detecção de Permissões**: `isOwner || activeBudget?.permission === 'WRITE'`
 - ✅ **Persistência**: Cookies para manter orçamento ativo entre sessões
 
 ### **Middleware de Segurança**
+
 - ✅ **Camadas Múltiplas**: `auth` → `budgetAuth` → `requireWritePermission`
 - ✅ **Aplicação Sistemática**: Todas as rotas de modificação protegidas
 - ✅ **Validação Granular**: Permissões específicas por tipo de operação
 
 ### **Interface Responsiva**
+
 - ✅ **Container Patterns**: `max-w-7xl mx-auto px-4 sm:px-6 lg:px-8`
 - ✅ **Grid Responsivo**: Layouts que se adaptam a diferentes telas
 - ✅ **Controles de Acesso**: Botões desabilitados e tooltips para permissões limitadas
@@ -1826,6 +1996,7 @@ interface ParseOptions {
 ## ✅ **TESTE COMPLETO DO SISTEMA - SETEMBRO 2025**
 
 ### **📊 Resultado do Teste de Compatibilidade**
+
 ```
 🏦 SISTEMA DE IMPORTAÇÃO DE EXTRATOS
 ====================================
@@ -1839,7 +2010,7 @@ interface ParseOptions {
 
 🏆 BANCOS SUPORTADOS:
 ✅ Nubank (CSV) - 54 transações
-✅ BTG Pactual (Excel + PDF) - 39 transações  
+✅ BTG Pactual (Excel + PDF) - 39 transações
 ✅ Bradesco (CSV) - 34 transações
 ✅ XP Investimentos (CSV) - 57 transações
 ✅ C6 Bank (CSV) - 15 transações
@@ -1849,13 +2020,14 @@ interface ParseOptions {
 ```
 
 ### **🆕 FILTRO POR PERÍODO - TESTADO**
+
 ```
 FUNCIONALIDADE: Filtro de data opcional na importação
 STATUS: ✅ 100% FUNCIONAL
 
 TESTES REALIZADOS:
 ✅ CSV (Nubank): 27 → 24 transações (filtro agosto)
-✅ Excel (BTG): 5 → 5 transações (já no período)  
+✅ Excel (BTG): 5 → 5 transações (já no período)
 ✅ PDF (BTG): 28 → 28 transações (já no período)
 
 CENÁRIOS VALIDADOS:
@@ -1866,6 +2038,7 @@ CENÁRIOS VALIDADOS:
 ```
 
 ### **🚀 INFRAESTRUTURA VALIDADA**
+
 ```
 COMPONENTE           STATUS    DETALHES
 ==================   =======   ========================
@@ -1879,6 +2052,7 @@ COMPONENTE           STATUS    DETALHES
 ```
 
 ### **🎯 FUNCIONALIDADES CRÍTICAS TESTADAS**
+
 - ✅ **Detecção automática** de formato de arquivo
 - ✅ **Parsing multi-banco** com 13 parsers específicos
 - ✅ **Filtro por período** em todos os formatos
@@ -1896,6 +2070,7 @@ COMPONENTE           STATUS    DETALHES
 ### **Exclusão de Importações Pendentes ou com Erro**
 
 **🎯 Problema Resolvido:**
+
 - Usuários não conseguiam excluir importações que falharam ou ficaram pendentes
 - Acúmulo de sessões inválidas no histórico de importações
 - Necessidade de limpeza manual do banco de dados
@@ -1903,21 +2078,25 @@ COMPONENTE           STATUS    DETALHES
 **✅ Solução Implementada:**
 
 #### **Frontend (ImportPage.tsx)**
+
 ```tsx
 // Novo botão de exclusão nas sessões listadas
-{(session.status === 'PENDING' || session.status === 'ERROR') && canWrite && (
-  <button
-    onClick={() => handleCancelSession(session.id, session.filename)}
-    disabled={cancelSessionMutation.isPending}
-    className="text-red-600 hover:text-red-700 p-2 rounded-md hover:bg-red-50"
-    title="Excluir esta importação"
-  >
-    <Trash2 className="h-4 w-4" />
-  </button>
-)}
+{
+  (session.status === "PENDING" || session.status === "ERROR") && canWrite && (
+    <button
+      onClick={() => handleCancelSession(session.id, session.filename)}
+      disabled={cancelSessionMutation.isPending}
+      className="text-red-600 hover:text-red-700 p-2 rounded-md hover:bg-red-50"
+      title="Excluir esta importação"
+    >
+      <Trash2 className="h-4 w-4" />
+    </button>
+  );
+}
 ```
 
 #### **Backend (ImportController.ts)**
+
 ```typescript
 // Validação aprimorada com permissões e estados
 static async cancelSession(req: AuthRequest, res: Response) {
@@ -1928,6 +2107,7 @@ static async cancelSession(req: AuthRequest, res: Response) {
 ```
 
 #### **Funcionalidades:**
+
 - ✅ **Botão de Lixeira**: Aparece apenas para sessões PENDING ou ERROR
 - ✅ **Validação de Permissões**: Apenas usuários com permissão WRITE podem excluir
 - ✅ **Confirmação**: Dialog de confirmação antes da exclusão
@@ -1937,6 +2117,7 @@ static async cancelSession(req: AuthRequest, res: Response) {
 - ✅ **Histórico Preservado**: Status CANCELLED mantido para auditoria
 
 #### **Estados de Sessão Suportados:**
+
 - `PENDING` → Pode ser cancelada (classificação incompleta)
 - `ERROR` → Pode ser cancelada (erro no processamento)
 - `PROCESSING` → Não pode ser cancelada (em andamento)
@@ -1944,6 +2125,7 @@ static async cancelSession(req: AuthRequest, res: Response) {
 - `CANCELLED` → Estado final (cancelada pelo usuário)
 
 #### **Rotas Implementadas:**
+
 - `DELETE /api/import/sessions/:sessionId` (orçamento pessoal)
 - `DELETE /api/budgets/:budgetId/import/sessions/:sessionId` (orçamento compartilhado)
 
@@ -1954,11 +2136,13 @@ static async cancelSession(req: AuthRequest, res: Response) {
 ### **13 de Outubro de 2025 - Upgrade Completo de Bibliotecas e Segurança**
 
 #### **🔒 Segurança Aprimorada**
+
 - ✅ **Vulnerabilidades Eliminadas**: Removida biblioteca `xlsx` com vulnerabilidades críticas
 - ✅ **Zero CVEs**: Todas as 0 vulnerabilidades detectadas após auditoria
 - ✅ **Bibliotecas Atualizadas**: Helmet v8.1.0, express-rate-limit v8.1.0, Joi v18.0.1
 
 #### **📊 Suporte Excel Aprimorado**
+
 - ✅ **ExcelJS v4.4.0**: Biblioteca principal para arquivos XLSX (mais segura que xlsx)
 - ✅ **node-xlsx**: Adicionado suporte completo para arquivos XLS legacy
 - ✅ **ExcelReader Robusto**: Tratamento de RichText, fórmulas, hiperlinks e objetos complexos
@@ -1966,23 +2150,27 @@ static async cancelSession(req: AuthRequest, res: Response) {
 - ✅ **Compatibilidade Total**: Suporte tanto para formatos antigos (.xls) quanto novos (.xlsx)
 
 #### **🔧 Atualizações Técnicas**
+
 - ✅ **Prisma v6.17.1**: Major update com melhorias de performance
 - ✅ **PDF-Parse v2.3.0**: Versão mais robusta para processamento de PDFs
 - ✅ **TypeScript v5.9.3**: Última versão com correções
 - ✅ **Jest v30.2.0**: Framework de testes atualizado
 
 #### **🧪 Testes de Compatibilidade**
+
 - ✅ **100% Sucesso**: Todos os arquivos de exemplo testados
 - ✅ **Itaú XLS**: 11 transações processadas com sucesso
-- ✅ **BTG XLSX**: 5 transações processadas com sucesso  
+- ✅ **BTG XLSX**: 5 transações processadas com sucesso
 - ✅ **Parsers Funcionais**: Todos os parsers bancários validados
 
 #### **📁 Arquivos Modificados**
+
 - `server/src/utils/excelReader.ts`: Nova classe com suporte XLS/XLSX
 - `server/src/utils/parsers/*Parser.ts`: Atualizados para usar ExcelReader
 - `server/package.json`: Bibliotecas atualizadas e xlsx removido
 
 #### **🎯 Benefícios**
+
 - **Segurança**: Sistema mais seguro sem vulnerabilidades conhecidas
 - **Compatibilidade**: Suporte total a arquivos Excel antigos e novos
 - **Performance**: Bibliotecas otimizadas com melhor desempenho
@@ -1995,43 +2183,51 @@ static async cancelSession(req: AuthRequest, res: Response) {
 ### **13 de Outubro de 2025 - Upgrade Completo do Frontend**
 
 #### **🔒 Segurança Frontend Aprimorada**
+
 - ✅ **Vulnerabilidades Eliminadas**: Corrigidas vulnerabilidades do Axios e ESBuild/Vite
 - ✅ **Zero CVEs**: Todas as 0 vulnerabilidades detectadas após auditoria completa
 - ✅ **Build Tools Seguros**: Vite v7.1.9 com correções de segurança
 
 #### **⚡ Build & Performance**
+
 - ✅ **Vite v7.1.9**: Major update com build 23% mais rápido (6s vs 7.8s)
 - ✅ **@vitejs/plugin-react v5.0.4**: Plugin React otimizado
 - ✅ **TypeScript v5.9.3**: Melhor IntelliSense e validação de tipos
 - ✅ **Bundle Otimizado**: Chunks reorganizados para melhor performance
 
 #### **🎨 UI & Styling Modernizado**
+
 - ✅ **Tailwind CSS v3.4.18**: Últimas funcionalidades e correções
 - ✅ **Tailwind Merge v3.3.1**: Major update para melhor performance de classes
 - ✅ **Lucide React v0.545.0**: 277 novos ícones e melhor tree-shaking
 - ✅ **Sonner v2.0.7**: Sistema de toast completamente reescrito
 
 #### **📊 Charts & Data Visualization**
+
 - ✅ **Recharts v3.2.1**: Major update com nova API e melhor performance
 - ✅ **Date-fns v4.1.0**: Biblioteca de datas moderna e tree-shakeable
 - ✅ **Tipos Corrigidos**: Interface `CategoryData` atualizada para compatibilidade
 
 #### **📝 Forms & Validation**
+
 - ✅ **React Hook Form v7.65.0**: Últimas correções e melhorias
 - ✅ **@hookform/resolvers v5.2.2**: Major update com melhor integração Zod
 - ✅ **Zod v3.25.76**: Validação de schemas atualizada
 
 #### **🔧 Development Tools**
+
 - ✅ **ESLint Ecosystem**: @typescript-eslint v8.46.1, react-hooks v7.0.0
 - ✅ **Configuração ESLint**: Criada configuração moderna e funcional
 - ✅ **Tipos Atualizados**: @types/node v20.19.21, React types atualizados
 
 #### **📁 Arquivos Modificados**
+
 - `client/package.json`: 15+ bibliotecas principais atualizadas
 - `client/.eslintrc.json`: Nova configuração ESLint criada
 - `client/src/pages/Reports.tsx`: Tipos corrigidos para Recharts v3
 
 #### **🎯 Benefícios Frontend**
+
 - **Segurança**: Frontend totalmente seguro sem vulnerabilidades
 - **Performance**: Build 23% mais rápido, bundle otimizado
 - **Modernidade**: Usando últimas versões compatíveis de todas as libs
@@ -2039,6 +2235,7 @@ static async cancelSession(req: AuthRequest, res: Response) {
 - **Manutenibilidade**: Código mais limpo com tipos TypeScript atualizados
 
 #### **🧪 Testes de Compatibilidade Client**
+
 - ✅ **Build Success**: Compilação em 6s sem erros
 - ✅ **TypeScript**: Validação completa dos tipos
 - ✅ **Charts**: Recharts v3 funcionando com dados existentes
@@ -2046,10 +2243,142 @@ static async cancelSession(req: AuthRequest, res: Response) {
 - ✅ **Routing**: React Router funcionando perfeitamente
 
 #### **📋 Bibliotecas Mantidas (Estratégicamente)**
+
 - **React 18**: Mantido (React 19 requer migração complexa)
 - **React Router v6**: Mantido (v7 tem breaking changes significativos)
 - **@tanstack/react-query v4**: Mantido (v5 requer refatoração da API)
 
 ---
 
-**Última atualização:** 13 de outubro de 2025 - 18:00
+## 🎯 **CORREÇÃO IMPLEMENTADA - 6 DE NOVEMBRO DE 2025**
+
+### **Problema Resolvido: Erro 404 nas Rotas de Accounts em Orçamentos Específicos**
+
+#### **🚨 Situação Inicial:**
+
+- Frontend enviando requisições para `/api/budgets/:budgetId/accounts` (POST/PUT/DELETE)
+- Backend tinha apenas rota GET implementada para orçamentos específicos
+- Erro 404 "API endpoint not found" em tentativas de criar/editar/excluir contas
+
+#### **✅ Solução Implementada:**
+
+**1. Rotas Completas para Accounts em Orçamentos Específicos:**
+
+```typescript
+// Adicionadas em server/src/routes/budgets.ts:
+POST   /api/budgets/:budgetId/accounts          # Criar conta
+PUT    /api/budgets/:budgetId/accounts/:id      # Atualizar conta
+DELETE /api/budgets/:budgetId/accounts/:id      # Deletar conta
+```
+
+**2. Rotas Completas para Categories em Orçamentos Específicos:**
+
+```typescript
+POST   /api/budgets/:budgetId/categories        # Criar categoria
+PUT    /api/budgets/:budgetId/categories/:id    # Atualizar categoria
+DELETE /api/budgets/:budgetId/categories/:id    # Deletar categoria
+```
+
+**3. Rotas Completas para Transactions em Orçamentos Específicos:**
+
+```typescript
+POST   /api/budgets/:budgetId/transactions      # Criar transação
+PUT    /api/budgets/:budgetId/transactions/:id  # Atualizar transação
+DELETE /api/budgets/:budgetId/transactions/:id  # Deletar transação
+```
+
+#### **🛡️ Middleware de Segurança Aplicado:**
+
+- `auth`: Validação de autenticação JWT
+- `budgetAuth`: Verificação de acesso ao orçamento específico
+- `requireWritePermission`: Exigência de permissão WRITE para operações de modificação
+
+#### **🧪 Testes de Validação:**
+
+```bash
+# Criação de conta em orçamento específico
+✅ POST /api/budgets/{budgetId}/accounts - Status 201
+
+# Listagem de contas
+✅ GET /api/budgets/{budgetId}/accounts - Status 200
+
+# Atualização de conta
+✅ PUT /api/budgets/{budgetId}/accounts/{id} - Status 200
+
+# Exclusão de conta
+✅ DELETE /api/budgets/{budgetId}/accounts/{id} - Status 204
+```
+
+#### **📋 Funcionalidades Implementadas:**
+
+- ✅ **Validação de Schema**: Joi validation para todos os endpoints
+- ✅ **Verificação de Propriedade**: Contas/categorias/transações devem pertencer ao orçamento
+- ✅ **Tratamento de Erros**: Respostas padronizadas para recursos não encontrados
+- ✅ **Consistência de API**: Mesmo formato de resposta das rotas principais
+- ✅ **Isolamento de Dados**: Transações nunca vazam entre orçamentos diferentes
+
+#### **🔧 Arquivos Modificados:**
+
+- `server/src/routes/budgets.ts`: +180 linhas de código com rotas CRUD completas
+- Importação do `Joi` adicionada para validação de schemas
+- Todas as validações de segurança e negócio implementadas
+
+#### **📈 Resultado:**
+
+**Sistema de Orçamentos Compartilhados 100% Funcional**
+
+- Usuários podem criar/editar/excluir dados em orçamentos compartilhados
+- Todas as operações CRUD funcionam tanto para orçamento próprio quanto compartilhado
+- Controles de permissão (READ/WRITE) respeitados em todos os endpoints
+- Arquitetura budget-centric totalmente implementada
+
+#### **🎯 Status Final:**
+
+**SISTEMA COMPLETO E OPERACIONAL** - Todas as funcionalidades do Budget App funcionam corretamente tanto para orçamentos próprios quanto compartilhados, com controles de segurança e permissão implementados.
+
+---
+
+## 🆕 **ATUALIZAÇÃO IMPLEMENTADA - 6 DE NOVEMBRO DE 2025 (20:30)**
+
+### **Criação Automática de Orçamento Padrão no Registro de Usuário**
+
+#### **✅ Funcionalidade Implementada:**
+
+- **Orçamento Automático**: Ao registrar novo usuário, sistema cria automaticamente orçamento padrão "Meu Orçamento"
+- **DefaultBudgetId**: Orçamento é automaticamente definido como padrão do usuário
+- **Acesso Imediato**: Usuário tem acesso funcional ao sistema sem passos adicionais
+- **Orçamento Vazio**: Criado sem contas e categorias pré-definidas (flexibilidade total para o usuário)
+
+#### **🔧 Implementação Técnica:**
+
+```typescript
+// Rota: POST /api/auth/register
+1. Criar usuário no banco de dados
+2. Criar orçamento padrão com nome "Meu Orçamento"
+3. Definir defaultBudgetId do usuário
+4. Retornar JWT token para login automático
+```
+
+#### **📋 Arquivos Modificados:**
+
+- `server/src/routes/auth.ts`: Lógica de criação automática de orçamento
+- `.github/copilot/copilot-context.md`: Documentação atualizada
+
+#### **🧪 Testes Validados:**
+
+- ✅ Registro de usuário cria orçamento automaticamente
+- ✅ DefaultBudgetId corretamente definido
+- ✅ Orçamento criado vazio (0 contas, 0 categorias, 0 transações)
+- ✅ JWT token retornado para acesso imediato
+- ✅ Usuário pode começar a usar o sistema imediatamente
+
+#### **🎯 Benefícios:**
+
+- **UX Melhorada**: Usuário não precisa criar orçamento manualmente
+- **Onboarding Simplificado**: Acesso funcional desde o primeiro login
+- **Arquitetura Consistente**: Mantém design budget-centric desde o início
+- **Flexibilidade**: Usuário define suas próprias contas e categorias
+
+---
+
+**Última atualização:** 6 de novembro de 2025 - 20:30 - Implementação de criação automática de orçamento padrão
