@@ -114,7 +114,7 @@ export interface BudgetShare {
 // Manter UserShare como alias para compatibilidade temporária
 export type UserShare = BudgetShare;
 
-export type SharePermission = 'READ' | 'WRITE';
+export type SharePermission = 'READ' | 'WRITE' | 'OWNER';
 
 export type ShareStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'REVOKED';
 
@@ -212,4 +212,4 @@ export type ImportStatus =
   | 'ERROR'         // Erro no processamento
   | 'CANCELLED';    // Cancelado pelo usuário
 
-export type ImportFileType = 'CSV' | 'PDF';
+export type ImportFileType = 'CSV' | 'PDF' | 'EXCEL';
