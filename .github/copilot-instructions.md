@@ -37,6 +37,17 @@
   - pedro@example.com
 - Senha padrão para todos: `123456`
 
+### 📦 Versionamento Semântico
+
+- **OBRIGATÓRIO**: Os arquivos `package.json` do client e server devem sempre refletir o versionamento semântico de 3 níveis: **MAJOR.MINOR.PATCH**
+- **Estrutura**: `"version": "X.Y.Z"` onde:
+  - **MAJOR** (X): Mudanças incompatíveis na API ou breaking changes
+  - **MINOR** (Y): Novas funcionalidades mantendo compatibilidade
+  - **PATCH** (Z): Correções de bugs e pequenas melhorias
+- **Sincronização**: Client e server devem sempre ter a mesma versão
+- **Atualização**: Incrementar versão em ambos os package.json simultaneamente
+- **Exemplo**: `"version": "1.2.3"`
+
 ### 📋 **PROTOCOLO PRÉ-DESENVOLVIMENTO**
 
 1. **SEMPRE consulte `.github/copilot/copilot-context.md`** - Fonte única de verdade

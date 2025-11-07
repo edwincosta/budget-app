@@ -13,12 +13,13 @@ import {
 import { budgetService, categoryService } from "@/services/api";
 import { Budget, Category } from "@/types";
 import { useBudget } from "@/contexts/BudgetContext";
+import { useUXComponents } from "@/hooks/useUXComponents";
 
 export default function Budgets() {
   const { activeBudget, isOwner } = useBudget();
+  const { executeWithUX, confirmDelete, showWarning } = useUXComponents();
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
   const [editingBudget, setEditingBudget] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [newBudget, setNewBudget] = useState({
@@ -33,8 +34,7 @@ export default function Budgets() {
   }, [activeBudget]);
 
   const loadData = async () => {
-    try {
-      setLoading(true);
+    await executeWithUX(async () => {
       // Para orçamento próprio, activeBudget é null, então budgetId será undefined
       // Para orçamento compartilhado, usar activeBudget.budgetId
       const budgetId = activeBudget?.budgetId;
@@ -47,69 +47,65 @@ export default function Budgets() {
       setCategories(
         categoriesData.filter((cat: Category) => cat.type === "EXPENSE")
       );
-    } catch (error) {
-      console.error("Erro ao carregar dados:", error);
-      alert("Erro ao carregar dados");
-    } finally {
-      setLoading(false);
-    }
+    }, "Carregando dados...");
   };
 
   const handleCreateBudget = async () => {
     if (!newBudget.categoryId || !newBudget.amount) {
-      alert("Preencha todos os campos obrigatórios");
+      showWarning("Preencha todos os campos obrigatórios");
       return;
     }
 
-    try {
-      const budgetId = activeBudget?.budgetId;
-      await budgetService.createBudget(
-        {
-          categoryId: newBudget.categoryId,
-          amount: parseFloat(newBudget.amount),
-          period: newBudget.period,
-          isActive: true,
-        },
-        budgetId
-      );
+    await executeWithUX(
+      async () => {
+        const budgetId = activeBudget?.budgetId;
+        await budgetService.createBudget(
+          {
+            categoryId: newBudget.categoryId,
+            amount: parseFloat(newBudget.amount),
+            period: newBudget.period,
+            isActive: true,
+          },
+          budgetId
+        );
 
-      setNewBudget({ categoryId: "", amount: "", period: "MONTHLY" });
-      setIsCreating(false);
-      loadData();
-    } catch (error) {
-      console.error("Erro ao criar orçamento:", error);
-      alert("Erro ao criar orçamento");
-    }
+        setNewBudget({ categoryId: "", amount: "", period: "MONTHLY" });
+        setIsCreating(false);
+        await loadData();
+      },
+      "Criando orçamento...",
+      "Orçamento criado com sucesso!"
+    );
   };
 
   const handleEditBudget = async (
     budgetId: string,
     updates: Partial<Budget>
   ) => {
-    try {
-      const activeBudgetId = activeBudget?.budgetId;
-      await budgetService.updateBudget(budgetId, updates, activeBudgetId);
-      setEditingBudget(null);
-      loadData();
-    } catch (error) {
-      console.error("Erro ao atualizar orçamento:", error);
-      alert("Erro ao atualizar orçamento");
-    }
+    await executeWithUX(
+      async () => {
+        const activeBudgetId = activeBudget?.budgetId;
+        await budgetService.updateBudget(budgetId, updates, activeBudgetId);
+        setEditingBudget(null);
+        await loadData();
+      },
+      "Atualizando orçamento...",
+      "Orçamento atualizado com sucesso!"
+    );
   };
 
   const handleDeleteBudget = async (budgetId: string) => {
-    if (!confirm("Tem certeza que deseja excluir este orçamento?")) {
-      return;
-    }
-
-    try {
-      const activeBudgetId = activeBudget?.budgetId;
-      await budgetService.deleteBudget(budgetId, activeBudgetId);
-      loadData();
-    } catch (error) {
-      console.error("Erro ao excluir orçamento:", error);
-      alert("Erro ao excluir orçamento");
-    }
+    confirmDelete("este orçamento", async () => {
+      await executeWithUX(
+        async () => {
+          const activeBudgetId = activeBudget?.budgetId;
+          await budgetService.deleteBudget(budgetId, activeBudgetId);
+          await loadData();
+        },
+        "Excluindo orçamento...",
+        "Orçamento excluído com sucesso!"
+      );
+    });
   };
 
   const formatAmount = (amount: number) => {
@@ -132,14 +128,6 @@ export default function Budgets() {
     (cat) =>
       !budgets.some((budget) => budget.categoryId === cat.id && budget.isActive)
   );
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -502,6 +490,7 @@ export default function Budgets() {
                       onDelete={() => handleDeleteBudget(budget.id)}
                       formatAmount={formatAmount}
                       formatPeriod={formatPeriod}
+                      showWarning={showWarning}
                     />
                   ))}
                 </tbody>
@@ -521,6 +510,7 @@ export default function Budgets() {
                   onDelete={() => handleDeleteBudget(budget.id)}
                   formatAmount={formatAmount}
                   formatPeriod={formatPeriod}
+                  showWarning={showWarning}
                 />
               ))}
             </div>
@@ -540,6 +530,7 @@ interface BudgetRowProps {
   onDelete: () => void;
   formatAmount: (amount: number) => string;
   formatPeriod: (period: string) => string;
+  showWarning: (message: string) => void;
 }
 
 function BudgetRow({
@@ -551,6 +542,7 @@ function BudgetRow({
   onDelete,
   formatAmount,
   formatPeriod,
+  showWarning,
 }: BudgetRowProps) {
   const [editData, setEditData] = useState({
     amount: budget.amount.toString(),
@@ -560,7 +552,7 @@ function BudgetRow({
 
   const handleSave = () => {
     if (!editData.amount) {
-      alert("Valor é obrigatório");
+      showWarning("Valor é obrigatório");
       return;
     }
 
@@ -702,6 +694,7 @@ interface BudgetCardProps {
   onDelete: () => void;
   formatAmount: (amount: number) => string;
   formatPeriod: (period: string) => string;
+  showWarning: (message: string) => void;
 }
 
 function BudgetCard({
@@ -713,6 +706,7 @@ function BudgetCard({
   onDelete,
   formatAmount,
   formatPeriod,
+  showWarning,
 }: BudgetCardProps) {
   const [editData, setEditData] = useState({
     amount: budget.amount.toString(),
@@ -722,7 +716,7 @@ function BudgetCard({
 
   const handleSave = () => {
     if (!editData.amount) {
-      alert("Valor é obrigatório");
+      showWarning("Valor é obrigatório");
       return;
     }
 
