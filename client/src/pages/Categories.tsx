@@ -1,128 +1,144 @@
-import { useState, useEffect } from 'react'
-import { Plus, Pencil, Trash2, Users } from 'lucide-react'
-import api from '@/services/api'
-import { useBudget } from '@/contexts/BudgetContext'
+import { useState, useEffect } from "react";
+import { Plus, Pencil, Trash2, Users } from "lucide-react";
+import api from "@/services/api";
+import { useBudget } from "@/contexts/BudgetContext";
+import { useUXComponents } from "@/hooks/useUXComponents";
 
 interface Category {
-  id: string
-  name: string
-  color: string
-  type: 'INCOME' | 'EXPENSE'
-  inactive: boolean
-  createdAt: string
+  id: string;
+  name: string;
+  color: string;
+  type: "INCOME" | "EXPENSE";
+  inactive: boolean;
+  createdAt: string;
 }
 
 const COLORS = [
-  '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16',
-  '#22c55e', '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9',
-  '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef',
-  '#ec4899', '#f43f5e', '#64748b', '#6b7280', '#374151'
-]
+  "#ef4444",
+  "#f97316",
+  "#f59e0b",
+  "#eab308",
+  "#84cc16",
+  "#22c55e",
+  "#10b981",
+  "#14b8a6",
+  "#06b6d4",
+  "#0ea5e9",
+  "#3b82f6",
+  "#6366f1",
+  "#8b5cf6",
+  "#a855f7",
+  "#d946ef",
+  "#ec4899",
+  "#f43f5e",
+  "#64748b",
+  "#6b7280",
+  "#374151",
+];
 
 const Categories = () => {
   const { activeBudget, isOwner } = useBudget();
-  const [categories, setCategories] = useState<Category[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null)
+  const { executeWithUX, confirmDelete, showWarning } = useUXComponents();
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [formData, setFormData] = useState({
-    name: '',
+    name: "",
     color: COLORS[0],
-    type: 'EXPENSE' as 'INCOME' | 'EXPENSE',
-    inactive: false
-  })
+    type: "EXPENSE" as "INCOME" | "EXPENSE",
+    inactive: false,
+  });
 
   const loadCategories = async () => {
-    try {
-      setIsLoading(true)
-      const response = await api.get('/categories')
-      setCategories(response.data.data || [])
-    } catch (error) {
-      console.error('Error loading categories:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
+    await executeWithUX(async () => {
+      const response = await api.get("/categories");
+      setCategories(response.data.data || []);
+    }, "Carregando categorias...");
+  };
 
   useEffect(() => {
-    loadCategories()
-  }, [])
+    loadCategories();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
+    e.preventDefault();
+
     if (!formData.name.trim()) {
-      alert('Nome da categoria é obrigatório')
-      return
+      showWarning("Nome da categoria é obrigatório");
+      return;
     }
 
-    try {
-      if (editingCategory) {
-        await api.put(`/categories/${editingCategory.id}`, formData)
-        alert('Categoria atualizada com sucesso!')
-      } else {
-        await api.post('/categories', formData)
-        alert('Categoria criada com sucesso!')
-      }
-      
-      setIsModalOpen(false)
-      setEditingCategory(null)
-      setFormData({ name: '', color: COLORS[0], type: 'EXPENSE', inactive: false })
-      loadCategories()
-    } catch (error) {
-      console.error('Error saving category:', error)
-      alert(editingCategory ? 'Erro ao atualizar categoria' : 'Erro ao criar categoria')
-    }
-  }
+    const loadingMessage = editingCategory
+      ? "Atualizando categoria..."
+      : "Criando categoria...";
+    const successMessage = editingCategory
+      ? "Categoria atualizada com sucesso!"
+      : "Categoria criada com sucesso!";
+
+    await executeWithUX(
+      async () => {
+        if (editingCategory) {
+          await api.put(`/categories/${editingCategory.id}`, formData);
+        } else {
+          await api.post("/categories", formData);
+        }
+
+        setIsModalOpen(false);
+        setEditingCategory(null);
+        setFormData({
+          name: "",
+          color: COLORS[0],
+          type: "EXPENSE",
+          inactive: false,
+        });
+        await loadCategories();
+      },
+      loadingMessage,
+      successMessage
+    );
+  };
 
   const handleEdit = (category: Category) => {
-    setEditingCategory(category)
+    setEditingCategory(category);
     setFormData({
       name: category.name,
       color: category.color,
       type: category.type,
-      inactive: category.inactive || false
-    })
-    setIsModalOpen(true)
-  }
+      inactive: category.inactive || false,
+    });
+    setIsModalOpen(true);
+  };
 
   const handleDelete = async (id: string) => {
     console.log(`Attempting to delete category with ID: ${id}`);
-    
-    if (!confirm('Tem certeza que deseja excluir esta categoria?')) {
-      console.log('Delete cancelled by user');
-      return
-    }
 
-    try {
-      console.log(`Making DELETE request to /categories/${id}`);
-      const response = await api.delete(`/categories/${id}`)
-      console.log('Delete response:', response.data);
-      alert('Categoria excluída com sucesso!')
-      await loadCategories()
-    } catch (error: any) {
-      console.error('Error deleting category:', error);
-      console.error('Error response:', error.response?.data);
-      alert(`Erro ao excluir categoria: ${error.response?.data?.message || error.message}`)
-    }
-  }
+    confirmDelete("esta categoria", async () => {
+      await executeWithUX(
+        async () => {
+          console.log(`Making DELETE request to /categories/${id}`);
+          const response = await api.delete(`/categories/${id}`);
+          console.log("Delete response:", response.data);
+          await loadCategories();
+        },
+        "Excluindo categoria...",
+        "Categoria excluída com sucesso!"
+      );
+    });
+  };
 
   const openCreateModal = () => {
-    setEditingCategory(null)
-    setFormData({ name: '', color: COLORS[0], type: 'EXPENSE', inactive: false })
-    setIsModalOpen(true)
-  }
+    setEditingCategory(null);
+    setFormData({
+      name: "",
+      color: COLORS[0],
+      type: "EXPENSE",
+      inactive: false,
+    });
+    setIsModalOpen(true);
+  };
 
-  const incomeCategories = categories.filter(cat => cat.type === 'INCOME')
-  const expenseCategories = categories.filter(cat => cat.type === 'EXPENSE')
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    )
-  }
+  const incomeCategories = categories.filter((cat) => cat.type === "INCOME");
+  const expenseCategories = categories.filter((cat) => cat.type === "EXPENSE");
 
   return (
     <div className="space-y-6">
@@ -136,16 +152,20 @@ const Categories = () => {
                 Visualizando: {activeBudget.budget?.name}
               </h3>
               <p className="text-sm text-blue-600">
-                Orçamento compartilhado por {activeBudget.budget?.owner?.name} • Permissão: {activeBudget.permission === 'READ' ? 'Visualização' : 'Edição'}
+                Orçamento compartilhado por {activeBudget.budget?.owner?.name} •
+                Permissão:{" "}
+                {activeBudget.permission === "READ" ? "Visualização" : "Edição"}
               </p>
             </div>
           </div>
         </div>
       )}
-      
+
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Categorias</h1>
-        {(isOwner || activeBudget?.permission === 'WRITE') && (
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+          Categorias
+        </h1>
+        {(isOwner || activeBudget?.permission === "WRITE") && (
           <button
             onClick={openCreateModal}
             className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors w-full sm:w-auto"
@@ -175,7 +195,9 @@ const Categories = () => {
                     style={{ backgroundColor: category.color }}
                   ></div>
                   <div className="flex items-center flex-1 min-w-0">
-                    <span className="font-medium text-gray-900 truncate">{category.name}</span>
+                    <span className="font-medium text-gray-900 truncate">
+                      {category.name}
+                    </span>
                     {category.inactive && (
                       <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
                         Inativa
@@ -200,7 +222,9 @@ const Categories = () => {
               </div>
             ))}
             {incomeCategories.length === 0 && (
-              <p className="text-gray-500 text-center py-4">Nenhuma categoria de receita</p>
+              <p className="text-gray-500 text-center py-4">
+                Nenhuma categoria de receita
+              </p>
             )}
           </div>
         </div>
@@ -223,7 +247,9 @@ const Categories = () => {
                     style={{ backgroundColor: category.color }}
                   ></div>
                   <div className="flex items-center flex-1 min-w-0">
-                    <span className="font-medium text-gray-900 truncate">{category.name}</span>
+                    <span className="font-medium text-gray-900 truncate">
+                      {category.name}
+                    </span>
                     {category.inactive && (
                       <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
                         Inativa
@@ -248,7 +274,9 @@ const Categories = () => {
               </div>
             ))}
             {expenseCategories.length === 0 && (
-              <p className="text-gray-500 text-center py-4">Nenhuma categoria de despesa</p>
+              <p className="text-gray-500 text-center py-4">
+                Nenhuma categoria de despesa
+              </p>
             )}
           </div>
         </div>
@@ -259,9 +287,9 @@ const Categories = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              {editingCategory ? 'Editar Categoria' : 'Nova Categoria'}
+              {editingCategory ? "Editar Categoria" : "Nova Categoria"}
             </h2>
-            
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -270,7 +298,9 @@ const Categories = () => {
                 <input
                   type="text"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Ex: Alimentação, Salário..."
                   required
@@ -283,7 +313,12 @@ const Categories = () => {
                 </label>
                 <select
                   value={formData.type}
-                  onChange={(e) => setFormData({ ...formData, type: e.target.value as 'INCOME' | 'EXPENSE' })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      type: e.target.value as "INCOME" | "EXPENSE",
+                    })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="EXPENSE">Despesa</option>
@@ -302,7 +337,9 @@ const Categories = () => {
                       type="button"
                       onClick={() => setFormData({ ...formData, color })}
                       className={`w-8 h-8 rounded-full border-2 ${
-                        formData.color === color ? 'border-gray-900' : 'border-gray-300'
+                        formData.color === color
+                          ? "border-gray-900"
+                          : "border-gray-300"
                       }`}
                       style={{ backgroundColor: color }}
                     />
@@ -315,13 +352,18 @@ const Categories = () => {
                   <input
                     type="checkbox"
                     checked={formData.inactive}
-                    onChange={(e) => setFormData({ ...formData, inactive: e.target.checked })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, inactive: e.target.checked })
+                    }
                     className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="text-sm font-medium text-gray-700">Categoria inativa</span>
+                  <span className="text-sm font-medium text-gray-700">
+                    Categoria inativa
+                  </span>
                 </label>
                 <p className="text-xs text-gray-500 mt-1">
-                  Categorias inativas não aparecerão como opções para novas transações
+                  Categorias inativas não aparecerão como opções para novas
+                  transações
                 </p>
               </div>
 
@@ -337,7 +379,7 @@ const Categories = () => {
                   type="submit"
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  {editingCategory ? 'Atualizar' : 'Criar'}
+                  {editingCategory ? "Atualizar" : "Criar"}
                 </button>
               </div>
             </form>
@@ -345,7 +387,7 @@ const Categories = () => {
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default Categories
+export default Categories;

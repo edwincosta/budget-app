@@ -798,6 +798,144 @@ export const useBudget = () => {
 };
 ```
 
+### **🆕 SISTEMA UX COMPONENTS - COMPONENTES DE INTERFACE GLOBAL**
+
+#### **UIContext** (`/contexts/UIContext.tsx`)
+
+Context React que gerencia o estado global de todos os componentes de interface:
+
+```typescript
+interface UIContextType {
+  // Loading
+  isLoading: boolean;
+  loadingMessage: string;
+  showLoading: (message?: string) => void;
+  hideLoading: () => void;
+
+  // Messages/Notifications
+  error: string | null;
+  errorType: "error" | "warning" | "info" | "success";
+  showError: (
+    message: string,
+    type?: "error" | "warning" | "info" | "success"
+  ) => void;
+  hideError: () => void;
+
+  // Confirmation Dialogs
+  confirmation: ConfirmationState | null;
+  showConfirmation: (config: ConfirmationConfig) => void;
+  hideConfirmation: () => void;
+}
+```
+
+#### **Loading** (`/components/Loading.tsx`)
+
+Componente de loading responsivo com overlay:
+
+- **3 Tamanhos**: `sm` (20px), `md` (32px), `lg` (48px)
+- **Overlay Opcional**: Backdrop blur para modal loading
+- **Responsivo**: Mobile-first com espaçamento adaptativo
+- **Integração**: Controlado via UIContext globalmente
+
+```tsx
+// Uso via hook
+const { showLoading, hideLoading } = useUXComponents();
+showLoading("Carregando dados...");
+```
+
+#### **ErrorMessage** (`/components/ErrorMessage.tsx`)
+
+Sistema de notificações toast responsivo:
+
+- **4 Tipos**: Error (vermelho), Warning (amarelo), Info (azul), Success (verde)
+- **Auto-close**: 5s para info/success, 10s para warning/error
+- **Posicionamento**: Fixed top-right com z-index alto
+- **Responsivo**: Largura adaptativa mobile/desktop
+- **Ícones**: Lucide React para identificação visual
+
+```tsx
+// Uso via hook
+const { showError, showSuccess, showWarning } = useUXComponents();
+showError("Erro ao salvar dados");
+showSuccess("Dados salvos com sucesso!");
+```
+
+#### **ConfirmDialog** (`/components/ConfirmDialog.tsx`)
+
+Modal de confirmação responsivo com 3 severidades:
+
+- **3 Tipos**: Info (azul), Warning (amarelo), Danger (vermelho)
+- **Layout Adaptativo**: Botões em coluna (mobile) e linha (desktop)
+- **Auto-close**: Fecha automaticamente após confirmação
+- **Backdrop**: Blur overlay para foco modal
+- **Acessibilidade**: Controles por teclado
+
+```tsx
+// Uso via hook
+const { confirmDelete, confirmAction } = useUXComponents();
+confirmDelete("esta categoria", () => deleteCategory(id));
+```
+
+#### **UIManager** (`/components/UIManager.tsx`)
+
+Componente central que renderiza todos os componentes UX:
+
+- Integrado no `App.tsx` para disponibilidade global
+- Controla renderização condicional de Loading, ErrorMessage, ConfirmDialog
+- Gerencia z-index e sobreposição de componentes
+
+#### **useUXComponents** (`/hooks/useUXComponents.ts`)
+
+Hook de conveniência com funções pré-configuradas:
+
+```typescript
+export const useUXComponents = () => {
+  // Funções básicas
+  const { showLoading, hideLoading, showError, showConfirmation } = useUI();
+
+  // Funções pré-configuradas
+  const executeWithUX = async (
+    operation: () => Promise<void>,
+    loadingMessage?: string,
+    successMessage?: string
+  ) => Promise<void>;
+
+  const confirmDelete = (
+    itemName: string,
+    onConfirm: () => void | Promise<void>
+  ) => void;
+
+  const showWarning = (message: string) => void;
+  const showSuccess = (message: string) => void;
+
+  return {
+    executeWithUX,
+    confirmDelete,
+    showWarning,
+    showSuccess,
+    showError
+  };
+};
+```
+
+#### **Migração Completa de Diálogos Nativos**
+
+**Todas as páginas foram migradas** de `alert()` e `confirm()` nativos para componentes UX:
+
+- ✅ **Categories.tsx**: Confirmação de exclusão + feedback de sucesso/erro
+- ✅ **Accounts.tsx**: Confirmação de exclusão + operações CRUD
+- ✅ **Transactions.tsx**: Confirmação de exclusão + feedback operações
+- ✅ **Budgets.tsx**: Confirmação de exclusão (incluindo BudgetRow/BudgetCard)
+- ✅ **ImportPage.tsx**: Confirmação de exclusão de sessões
+
+**Benefícios Alcançados:**
+
+- 🎨 **UX Consistente**: Design system unificado
+- 📱 **Mobile-First**: Totalmente responsivo
+- ♿ **Acessibilidade**: Melhor navegação e contraste
+- 🔧 **Manutenibilidade**: Código centralizado e reutilizável
+- ⚡ **Performance**: Componentes otimizados sem re-renders
+
 ### **Integração no App.tsx**
 
 O BudgetProvider envolve toda a aplicação garantindo acesso global:
@@ -2457,4 +2595,4 @@ UPDATE "BudgetShare" SET permission = 'WRITE' WHERE permission = 'write';
 
 ---
 
-**Última atualização:** 7 de novembro de 2025 - 14:45 - Adicionado EXCEL ao enum ImportFileType e troubleshooting de enums
+**Última atualização:** 7 de novembro de 2025 - 17:30 - Sistema UX Components implementado: Loading, ErrorMessage, ConfirmDialog com UIContext/UIManager - Migração completa de diálogos nativos para componentes responsivos - Versão atualizada para 1.1.0

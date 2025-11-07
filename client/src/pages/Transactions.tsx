@@ -1,197 +1,220 @@
-import { useState, useEffect } from 'react'
-import { Plus, ArrowUpRight, ArrowDownLeft, Search, Filter, Pencil, Trash2, Users } from 'lucide-react'
-import { transactionService, accountService, categoryService } from '@/services/api'
-import { useBudget } from '@/contexts/BudgetContext'
-import type { Transaction, Account, Category } from '@/types'
+import { useState, useEffect } from "react";
+import {
+  Plus,
+  ArrowUpRight,
+  ArrowDownLeft,
+  Search,
+  Filter,
+  Pencil,
+  Trash2,
+  Users,
+} from "lucide-react";
+import {
+  transactionService,
+  accountService,
+  categoryService,
+} from "@/services/api";
+import { useBudget } from "@/contexts/BudgetContext";
+import { useUXComponents } from "@/hooks/useUXComponents";
+import type { Transaction, Account, Category } from "@/types";
 
 const Transactions = () => {
   const { activeBudget, isOwner } = useBudget();
-  const [transactions, setTransactions] = useState<Transaction[]>([])
-  const [accounts, setAccounts] = useState<Account[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [filterType, setFilterType] = useState<'ALL' | 'INCOME' | 'EXPENSE'>('ALL')
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
+  const { executeWithUX, confirmDelete, showWarning } = useUXComponents();
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterType, setFilterType] = useState<"ALL" | "INCOME" | "EXPENSE">(
+    "ALL"
+  );
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingTransaction, setEditingTransaction] =
+    useState<Transaction | null>(null);
   const [formData, setFormData] = useState({
-    description: '',
+    description: "",
     amount: 0,
-    type: 'EXPENSE' as 'INCOME' | 'EXPENSE' | 'TRANSFER',
-    date: new Date().toISOString().split('T')[0],
-    accountId: '',
-    categoryId: ''
-  })
+    type: "EXPENSE" as "INCOME" | "EXPENSE" | "TRANSFER",
+    date: new Date().toISOString().split("T")[0],
+    accountId: "",
+    categoryId: "",
+  });
 
   const loadTransactions = async () => {
-    try {
-      setIsLoading(true)
-      const budgetId = activeBudget?.budget?.id;
-      const transactionsData = await transactionService.getTransactions(budgetId)
-      setTransactions(transactionsData || [])
-    } catch (error) {
-      console.error('Error loading transactions:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
+    await executeWithUX(async () => {
+      const budgetId = activeBudget?.budgetId;
+      const transactionsData = await transactionService.getTransactions(
+        budgetId
+      );
+      setTransactions(transactionsData || []);
+    }, "Carregando transações...");
+  };
 
   const loadAccounts = async () => {
     try {
-      const budgetId = activeBudget?.budget?.id;
-      const accountsData = await accountService.getAccounts(budgetId)
-      setAccounts(accountsData || [])
+      const budgetId = activeBudget?.budgetId;
+      const accountsData = await accountService.getAccounts(budgetId);
+      setAccounts(accountsData || []);
     } catch (error) {
-      console.error('Error loading accounts:', error)
+      console.error("Error loading accounts:", error);
     }
-  }
+  };
 
   const loadCategories = async () => {
     try {
-      const budgetId = activeBudget?.budget?.id;
-      const categoriesData = await categoryService.getCategories(budgetId)
-      setCategories(categoriesData || [])
+      const budgetId = activeBudget?.budgetId;
+      const categoriesData = await categoryService.getCategories(budgetId);
+      setCategories(categoriesData || []);
     } catch (error) {
-      console.error('Error loading categories:', error)
+      console.error("Error loading categories:", error);
     }
-  }
+  };
 
   useEffect(() => {
-    loadTransactions()
-    loadAccounts()
-    loadCategories()
-  }, [activeBudget])
+    loadTransactions();
+    loadAccounts();
+    loadCategories();
+  }, [activeBudget]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!formData.description.trim()) {
-      alert('Descrição é obrigatória')
-      return
+      showWarning("Descrição é obrigatória");
+      return;
     }
 
     if (!formData.accountId) {
-      alert('Conta é obrigatória')
-      return
+      showWarning("Conta é obrigatória");
+      return;
     }
 
     if (!formData.categoryId) {
-      alert('Categoria é obrigatória')
-      return
+      showWarning("Categoria é obrigatória");
+      return;
     }
 
-    try {
-      const budgetId = activeBudget?.budget?.id;
-      const transactionData = {
-        ...formData,
-        date: new Date(formData.date).toISOString()
-      }
+    const loadingMessage = editingTransaction
+      ? "Atualizando transação..."
+      : "Criando transação...";
+    const successMessage = editingTransaction
+      ? "Transação atualizada com sucesso!"
+      : "Transação criada com sucesso!";
 
-      if (editingTransaction) {
-        await transactionService.updateTransaction(editingTransaction.id, transactionData, budgetId)
-        console.log('Transação atualizada com sucesso!')
-      } else {
-        await transactionService.createTransaction(transactionData, budgetId)
-        console.log('Transação criada com sucesso!')
-      }
+    await executeWithUX(
+      async () => {
+        const budgetId = activeBudget?.budgetId;
+        const transactionData = {
+          ...formData,
+          date: new Date(formData.date).toISOString(),
+        };
 
-      setIsModalOpen(false)
-      setEditingTransaction(null)
-      setFormData({
-        description: '',
-        amount: 0,
-        type: 'EXPENSE',
-        date: new Date().toISOString().split('T')[0],
-        accountId: '',
-        categoryId: ''
-      })
-      loadTransactions()
-    } catch (error) {
-      console.error('Error saving transaction:', error)
-      alert(editingTransaction ? 'Erro ao atualizar transação' : 'Erro ao criar transação')
-    }
-  }
+        if (editingTransaction) {
+          await transactionService.updateTransaction(
+            editingTransaction.id,
+            transactionData,
+            budgetId
+          );
+        } else {
+          await transactionService.createTransaction(transactionData, budgetId);
+        }
+
+        setIsModalOpen(false);
+        setEditingTransaction(null);
+        setFormData({
+          description: "",
+          amount: 0,
+          type: "EXPENSE",
+          date: new Date().toISOString().split("T")[0],
+          accountId: "",
+          categoryId: "",
+        });
+        await loadTransactions();
+      },
+      loadingMessage,
+      successMessage
+    );
+  };
 
   const handleEdit = (transaction: Transaction) => {
-    setEditingTransaction(transaction)
+    setEditingTransaction(transaction);
     setFormData({
       description: transaction.description,
       amount: Number(transaction.amount),
       type: transaction.type,
-      date: new Date(transaction.date).toISOString().split('T')[0],
-      accountId: transaction.accountId || '',
-      categoryId: transaction.categoryId || ''
-    })
-    setIsModalOpen(true)
-  }
+      date: new Date(transaction.date).toISOString().split("T")[0],
+      accountId: transaction.accountId || "",
+      categoryId: transaction.categoryId || "",
+    });
+    setIsModalOpen(true);
+  };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Tem certeza que deseja excluir esta transação?')) {
-      return
-    }
-
-    try {
-      const budgetId = activeBudget?.budget?.id;
-      await transactionService.deleteTransaction(id, budgetId)
-      console.log('Transação excluída com sucesso!')
-      loadTransactions()
-    } catch (error: any) {
-      console.error('Error deleting transaction:', error)
-      alert(`Erro ao excluir transação: ${error.response?.data?.message || error.message}`)
-    }
-  }
+    confirmDelete("esta transação", async () => {
+      await executeWithUX(
+        async () => {
+          const budgetId = activeBudget?.budgetId;
+          await transactionService.deleteTransaction(id, budgetId);
+          console.log("Transação excluída com sucesso!");
+          await loadTransactions();
+        },
+        "Excluindo transação...",
+        "Transação excluída com sucesso!"
+      );
+    });
+  };
 
   const openCreateModal = () => {
-    setEditingTransaction(null)
+    setEditingTransaction(null);
     setFormData({
-      description: '',
+      description: "",
       amount: 0,
-      type: 'EXPENSE',
-      date: new Date().toISOString().split('T')[0],
-      accountId: '',
-      categoryId: ''
-    })
-    setIsModalOpen(true)
-  }
+      type: "EXPENSE",
+      date: new Date().toISOString().split("T")[0],
+      accountId: "",
+      categoryId: "",
+    });
+    setIsModalOpen(true);
+  };
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value)
-  }
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(value);
+  };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR')
-  }
+    return new Date(dateString).toLocaleDateString("pt-BR");
+  };
 
-  const filteredTransactions = transactions.filter(transaction => {
-    const matchesSearch = transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      transaction.category?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      transaction.account?.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredTransactions = transactions.filter((transaction) => {
+    const matchesSearch =
+      transaction.description
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      transaction.category?.name
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      transaction.account?.name
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
 
-    const matchesFilter = filterType === 'ALL' || transaction.type === filterType
+    const matchesFilter =
+      filterType === "ALL" || transaction.type === filterType;
 
-    return matchesSearch && matchesFilter
-  })
+    return matchesSearch && matchesFilter;
+  });
 
   const totalIncome = transactions
-    .filter(t => t.type === 'INCOME')
-    .reduce((sum, t) => sum + Number(t.amount), 0)
+    .filter((t) => t.type === "INCOME")
+    .reduce((sum, t) => sum + Number(t.amount), 0);
 
   const totalExpense = transactions
-    .filter(t => t.type === 'EXPENSE')
-    .reduce((sum, t) => sum + Number(t.amount), 0)
+    .filter((t) => t.type === "EXPENSE")
+    .reduce((sum, t) => sum + Number(t.amount), 0);
 
-  const balance = totalIncome - totalExpense
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    )
-  }
+  const balance = totalIncome - totalExpense;
 
   return (
     <div className="space-y-6">
@@ -205,7 +228,9 @@ const Transactions = () => {
                 Visualizando: {activeBudget.budget?.name}
               </h3>
               <p className="text-sm text-blue-600">
-                Orçamento compartilhado por {activeBudget.budget?.owner?.name} • Permissão: {activeBudget.permission === 'READ' ? 'Visualização' : 'Edição'}
+                Orçamento compartilhado por {activeBudget.budget?.owner?.name} •
+                Permissão:{" "}
+                {activeBudget.permission === "READ" ? "Visualização" : "Edição"}
               </p>
             </div>
           </div>
@@ -213,8 +238,10 @@ const Transactions = () => {
       )}
 
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Transações</h1>
-        {(isOwner || activeBudget?.permission === 'WRITE') && (
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+          Transações
+        </h1>
+        {(isOwner || activeBudget?.permission === "WRITE") && (
           <button
             onClick={openCreateModal}
             className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors w-full sm:w-auto"
@@ -278,7 +305,11 @@ const Transactions = () => {
                   <dt className="text-sm font-medium text-gray-500 truncate">
                     Saldo
                   </dt>
-                  <dd className={`text-lg font-medium ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  <dd
+                    className={`text-lg font-medium ${
+                      balance >= 0 ? "text-green-600" : "text-red-600"
+                    }`}
+                  >
                     {formatCurrency(balance)}
                   </dd>
                 </dl>
@@ -308,7 +339,9 @@ const Transactions = () => {
             <Filter className="w-4 h-4 text-gray-400" />
             <select
               value={filterType}
-              onChange={(e) => setFilterType(e.target.value as 'ALL' | 'INCOME' | 'EXPENSE')}
+              onChange={(e) =>
+                setFilterType(e.target.value as "ALL" | "INCOME" | "EXPENSE")
+              }
               className="px-3 py-2 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[120px]"
             >
               <option value="ALL">Todos</option>
@@ -327,10 +360,14 @@ const Transactions = () => {
               <Plus className="w-6 h-6 text-gray-400" />
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              {transactions.length === 0 ? 'Nenhuma transação encontrada' : 'Nenhuma transação corresponde aos filtros'}
+              {transactions.length === 0
+                ? "Nenhuma transação encontrada"
+                : "Nenhuma transação corresponde aos filtros"}
             </h3>
             <p className="text-gray-600 mb-4">
-              {transactions.length === 0 ? 'Comece criando sua primeira transação.' : 'Tente ajustar os filtros de busca.'}
+              {transactions.length === 0
+                ? "Comece criando sua primeira transação."
+                : "Tente ajustar os filtros de busca."}
             </p>
             {transactions.length === 0 && (
               <button
@@ -345,14 +382,22 @@ const Transactions = () => {
         ) : (
           <div className="divide-y divide-gray-200">
             {filteredTransactions.map((transaction) => (
-              <div key={transaction.id} className="p-4 md:p-6 hover:bg-gray-50 transition-colors">
+              <div
+                key={transaction.id}
+                className="p-4 md:p-6 hover:bg-gray-50 transition-colors"
+              >
                 {/* Mobile Card Layout */}
                 <div className="md:hidden">
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div className="flex items-start space-x-3 min-w-0 flex-1">
-                      <div className={`p-2 rounded-lg flex-shrink-0 ${transaction.type === 'INCOME' ? 'bg-green-100' : 'bg-red-100'
-                        }`}>
-                        {transaction.type === 'INCOME' ? (
+                      <div
+                        className={`p-2 rounded-lg flex-shrink-0 ${
+                          transaction.type === "INCOME"
+                            ? "bg-green-100"
+                            : "bg-red-100"
+                        }`}
+                      >
+                        {transaction.type === "INCOME" ? (
                           <ArrowUpRight className="w-5 h-5 text-green-600" />
                         ) : (
                           <ArrowDownLeft className="w-5 h-5 text-red-600" />
@@ -360,15 +405,23 @@ const Transactions = () => {
                       </div>
 
                       <div className="min-w-0 flex-1">
-                        <h4 className="font-medium text-gray-900 text-base mb-1">{transaction.description}</h4>
-                        <div className={`text-lg font-semibold mb-2 ${transaction.type === 'INCOME' ? 'text-green-600' : 'text-red-600'
-                          }`}>
-                          {transaction.type === 'INCOME' ? '+' : '-'}{formatCurrency(Math.abs(Number(transaction.amount)))}
+                        <h4 className="font-medium text-gray-900 text-base mb-1">
+                          {transaction.description}
+                        </h4>
+                        <div
+                          className={`text-lg font-semibold mb-2 ${
+                            transaction.type === "INCOME"
+                              ? "text-green-600"
+                              : "text-red-600"
+                          }`}
+                        >
+                          {transaction.type === "INCOME" ? "+" : "-"}
+                          {formatCurrency(Math.abs(Number(transaction.amount)))}
                         </div>
                       </div>
                     </div>
 
-                    {(isOwner || activeBudget?.permission === 'WRITE') && (
+                    {(isOwner || activeBudget?.permission === "WRITE") && (
                       <div className="flex items-center space-x-1 flex-shrink-0">
                         <button
                           onClick={() => handleEdit(transaction)}
@@ -392,26 +445,40 @@ const Transactions = () => {
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     {transaction.category && (
                       <div className="bg-gray-50 p-3 rounded-lg">
-                        <div className="text-gray-500 text-xs uppercase tracking-wider font-medium mb-1">Categoria</div>
+                        <div className="text-gray-500 text-xs uppercase tracking-wider font-medium mb-1">
+                          Categoria
+                        </div>
                         <div className="flex items-center">
                           <div
                             className="w-3 h-3 rounded-full mr-2 flex-shrink-0"
-                            style={{ backgroundColor: transaction.category.color }}
+                            style={{
+                              backgroundColor: transaction.category.color,
+                            }}
                           ></div>
-                          <span className="text-gray-900 font-medium truncate">{transaction.category.name}</span>
+                          <span className="text-gray-900 font-medium truncate">
+                            {transaction.category.name}
+                          </span>
                         </div>
                       </div>
                     )}
 
                     <div className="bg-gray-50 p-3 rounded-lg">
-                      <div className="text-gray-500 text-xs uppercase tracking-wider font-medium mb-1">Data</div>
-                      <div className="text-gray-900 font-medium">{formatDate(transaction.date)}</div>
+                      <div className="text-gray-500 text-xs uppercase tracking-wider font-medium mb-1">
+                        Data
+                      </div>
+                      <div className="text-gray-900 font-medium">
+                        {formatDate(transaction.date)}
+                      </div>
                     </div>
 
                     {transaction.account && (
                       <div className="bg-gray-50 p-3 rounded-lg col-span-2">
-                        <div className="text-gray-500 text-xs uppercase tracking-wider font-medium mb-1">Conta</div>
-                        <div className="text-gray-900 font-medium truncate">{transaction.account.name}</div>
+                        <div className="text-gray-500 text-xs uppercase tracking-wider font-medium mb-1">
+                          Conta
+                        </div>
+                        <div className="text-gray-900 font-medium truncate">
+                          {transaction.account.name}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -420,9 +487,14 @@ const Transactions = () => {
                 {/* Desktop Row Layout */}
                 <div className="hidden md:flex items-center justify-between gap-4">
                   <div className="flex items-center space-x-3 md:space-x-4 min-w-0 flex-1">
-                    <div className={`p-2 rounded-lg flex-shrink-0 ${transaction.type === 'INCOME' ? 'bg-green-100' : 'bg-red-100'
-                      }`}>
-                      {transaction.type === 'INCOME' ? (
+                    <div
+                      className={`p-2 rounded-lg flex-shrink-0 ${
+                        transaction.type === "INCOME"
+                          ? "bg-green-100"
+                          : "bg-red-100"
+                      }`}
+                    >
+                      {transaction.type === "INCOME" ? (
                         <ArrowUpRight className="w-4 h-4 md:w-5 md:h-5 text-green-600" />
                       ) : (
                         <ArrowDownLeft className="w-4 h-4 md:w-5 md:h-5 text-red-600" />
@@ -430,38 +502,54 @@ const Transactions = () => {
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <h4 className="font-medium text-gray-900 truncate text-sm md:text-base">{transaction.description}</h4>
+                      <h4 className="font-medium text-gray-900 truncate text-sm md:text-base">
+                        {transaction.description}
+                      </h4>
                       <div className="flex flex-col md:flex-row md:items-center md:space-x-2 text-sm text-gray-600 mt-1">
                         {transaction.category && (
                           <div className="flex items-center mb-1 md:mb-0">
                             <div
                               className="w-3 h-3 rounded-full mr-1 flex-shrink-0"
-                              style={{ backgroundColor: transaction.category.color }}
+                              style={{
+                                backgroundColor: transaction.category.color,
+                              }}
                             ></div>
-                            <span className="truncate">{transaction.category.name}</span>
+                            <span className="truncate">
+                              {transaction.category.name}
+                            </span>
                           </div>
                         )}
                         {transaction.account && (
                           <>
                             <span className="hidden md:inline">•</span>
-                            <span className="truncate">{transaction.account.name}</span>
+                            <span className="truncate">
+                              {transaction.account.name}
+                            </span>
                           </>
                         )}
                         <span className="hidden md:inline">•</span>
-                        <span className="text-xs md:text-sm">{formatDate(transaction.date)}</span>
+                        <span className="text-xs md:text-sm">
+                          {formatDate(transaction.date)}
+                        </span>
                       </div>
                     </div>
                   </div>
 
                   <div className="flex items-center space-x-2 md:space-x-4 flex-shrink-0">
-                    <div className={`text-sm md:text-base lg:text-lg font-semibold text-right ${transaction.type === 'INCOME' ? 'text-green-600' : 'text-red-600'
-                      }`}>
+                    <div
+                      className={`text-sm md:text-base lg:text-lg font-semibold text-right ${
+                        transaction.type === "INCOME"
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}
+                    >
                       <div className="whitespace-nowrap">
-                        {transaction.type === 'INCOME' ? '+' : '-'}{formatCurrency(Math.abs(Number(transaction.amount)))}
+                        {transaction.type === "INCOME" ? "+" : "-"}
+                        {formatCurrency(Math.abs(Number(transaction.amount)))}
                       </div>
                     </div>
 
-                    {(isOwner || activeBudget?.permission === 'WRITE') && (
+                    {(isOwner || activeBudget?.permission === "WRITE") && (
                       <div className="flex items-center space-x-1 md:space-x-2">
                         <button
                           onClick={() => handleEdit(transaction)}
@@ -492,7 +580,7 @@ const Transactions = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg p-4 md:p-6 w-full max-w-md md:max-w-lg max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-4 md:mb-6">
-              {editingTransaction ? 'Editar Transação' : 'Nova Transação'}
+              {editingTransaction ? "Editar Transação" : "Nova Transação"}
             </h2>
 
             <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
@@ -503,7 +591,9 @@ const Transactions = () => {
                 <input
                   type="text"
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
                   className="w-full px-3 py-2 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Ex: Compra no supermercado"
                   required
@@ -519,7 +609,12 @@ const Transactions = () => {
                     type="number"
                     step="0.01"
                     value={formData.amount}
-                    onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        amount: parseFloat(e.target.value) || 0,
+                      })
+                    }
                     className="w-full px-3 py-2 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="0,00"
                     required
@@ -532,7 +627,12 @@ const Transactions = () => {
                   </label>
                   <select
                     value={formData.type}
-                    onChange={(e) => setFormData({ ...formData, type: e.target.value as 'INCOME' | 'EXPENSE' })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        type: e.target.value as "INCOME" | "EXPENSE",
+                      })
+                    }
                     className="w-full px-3 py-2 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="EXPENSE">Despesa</option>
@@ -548,7 +648,9 @@ const Transactions = () => {
                 <input
                   type="date"
                   value={formData.date}
-                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, date: e.target.value })
+                  }
                   className="w-full px-3 py-2 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   required
                 />
@@ -561,7 +663,9 @@ const Transactions = () => {
                   </label>
                   <select
                     value={formData.accountId}
-                    onChange={(e) => setFormData({ ...formData, accountId: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, accountId: e.target.value })
+                    }
                     className="w-full px-3 py-2 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
                   >
@@ -580,13 +684,15 @@ const Transactions = () => {
                   </label>
                   <select
                     value={formData.categoryId}
-                    onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, categoryId: e.target.value })
+                    }
                     className="w-full px-3 py-2 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
                   >
                     <option value="">Selecione uma categoria</option>
                     {categories
-                      .filter(category => category.type === formData.type)
+                      .filter((category) => category.type === formData.type)
                       .map((category) => (
                         <option key={category.id} value={category.id}>
                           {category.name}
@@ -608,7 +714,7 @@ const Transactions = () => {
                   type="submit"
                   className="px-4 py-2 md:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors order-1 md:order-2"
                 >
-                  {editingTransaction ? 'Atualizar' : 'Criar'}
+                  {editingTransaction ? "Atualizar" : "Criar"}
                 </button>
               </div>
             </form>
@@ -616,7 +722,7 @@ const Transactions = () => {
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default Transactions
+export default Transactions;
