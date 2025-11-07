@@ -204,6 +204,7 @@ model TempTransaction {
 enum ImportFileType {
   CSV
   PDF
+  EXCEL
 }
 
 enum ImportStatus {
