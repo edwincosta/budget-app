@@ -8,7 +8,6 @@ import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
-import path from 'path';
 import { PrismaClient } from '@prisma/client';
 
 console.log('✅ Core imports loaded successfully');
@@ -28,7 +27,6 @@ import importRoutes from './routes/import';
 
 // Middleware
 import { errorHandler } from './middleware/errorHandler';
-import { notFound } from './middleware/notFound';
 
 // Seed function for development
 import { seedDatabase } from './utils/seed';
@@ -171,27 +169,22 @@ console.log('   📈 Dashboard: /api/dashboard/* (default budget context)');
 console.log('   📄 Reports: /api/reports (default budget context)');
 console.log('   📥 Import: /api/import/* (file import system)');
 
-// Serve static files in production
-if (process.env.NODE_ENV === 'production') {
-  const clientBuildPath = path.join(__dirname, '../../client/dist');
-  console.log(`📁 Serving static files from: ${clientBuildPath}`);
+// No static file serving - client is deployed separately
+// The client is deployed as a static site on Render
+// Server only provides API endpoints
 
-  app.use(express.static(clientBuildPath));
-
-  // Handle React Router - serve index.html for all non-API routes
-  app.get('*', (req, res) => {
-    if (!req.path.startsWith('/api') && !req.path.startsWith('/health')) {
-      res.sendFile(path.join(clientBuildPath, 'index.html'));
-    } else {
-      res.status(404).json({ error: 'API endpoint not found' });
-    }
-  });
-
-  console.log('✅ Static file serving configured for production');
-}
+// Catch-all for non-API routes - inform about separate deployments
+app.get('*', (req, res) => {
+  if (!req.path.startsWith('/api') && !req.path.startsWith('/health')) {
+    res.status(404).json({
+      error: 'This is an API server only',
+      message: 'The frontend is deployed separately at https://budget-app-docker-client.onrender.com',
+      availableRoutes: ['/api/auth', '/api/budgets', '/api/accounts', '/api/transactions', '/health']
+    });
+  }
+});
 
 // Error handling
-app.use(notFound);
 app.use(errorHandler);
 
 console.log('✅ Error handlers configured');
@@ -217,11 +210,11 @@ if (require.main === module) {
   const startServer = async () => {
     try {
       console.log('🔍 Testing database connection...');
-      
+
       // Test database connection
       await prisma.$connect();
       console.log('✅ Database connected successfully');
-      
+
       // Start server
       const server = app.listen(PORT, () => {
         console.log(`🚀 Complete Budget Server running on port ${PORT}`);

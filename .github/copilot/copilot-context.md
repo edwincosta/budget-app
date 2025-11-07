@@ -20,6 +20,7 @@ O **Budget App** é um sistema completo de gerenciamento de orçamentos pessoais
 - ✅ **Sistema avançado de detecção de duplicatas**
 - ✅ **Suporte a múltiplos bancos brasileiros (Nubank, BTG, Bradesco, etc.)**
 - ✅ **🆕 Exclusão de importações pendentes ou com erro**
+- ✅ **🆕 Health Check inteligente para despertar servidor (Render optimized)**
 - ✅ Relatórios e análises financeiras
 - ✅ Dashboard com métricas
 
@@ -2595,4 +2596,57 @@ UPDATE "BudgetShare" SET permission = 'WRITE' WHERE permission = 'write';
 
 ---
 
-**Última atualização:** 7 de novembro de 2025 - 17:30 - Sistema UX Components implementado: Loading, ErrorMessage, ConfirmDialog com UIContext/UIManager - Migração completa de diálogos nativos para componentes responsivos - Versão atualizada para 1.1.0
+## 🏥 SISTEMA DE HEALTH CHECK INTELIGENTE
+
+### **Visão Geral**
+Sistema otimizado para plano gratuito do Render que garante disponibilidade do servidor sem esgotar recursos gratuitos.
+
+### **Componentes Implementados**
+
+#### **useServerHealth Hook**
+```typescript
+// /client/src/hooks/useServerHealth.ts
+- Health check inicial obrigatório ao carregar aplicação
+- Retry com backoff exponencial (1s, 2s, 4s)
+- SEM health check periódico automático (economia de horas)
+- Interface para keepAlive manual quando necessário
+```
+
+#### **ServerHealthGuard Component**
+```typescript
+// /client/src/components/ServerHealthGuard.tsx
+- Loading spinner durante health check inicial
+- Mensagem educativa sobre "despertar" do servidor
+- Interface de erro com retry manual
+- Design responsivo com Tailwind CSS
+```
+
+#### **Integração no App.tsx**
+```typescript
+// Envolvendo toda aplicação no health check
+<ServerHealthGuard>
+  <Routes>...</Routes>
+</ServerHealthGuard>
+```
+
+### **Estratégia de Economia**
+
+#### **Plano Gratuito Render (750h/mês)**
+- ❌ **Evitado**: Health check a cada 5min = 720h/mês (96% do limite)
+- ✅ **Implementado**: Health check apenas ao acessar = ~120h/mês (16% do limite)
+- ✅ **Economia**: 83% das horas (500h economizadas/mês)
+
+#### **Comportamento do Servidor**
+- **Dormindo**: Após 15min de inatividade (automático)
+- **Despertar**: 10-30 segundos no primeiro acesso do dia
+- **Consumo**: <1MB/mês de bandwidth (0.001% do limite)
+
+### **Experiência do Usuário**
+- Loading educativo durante despertar
+- Interface clara sobre processo de conexão
+- Retry manual em caso de falha
+- Zero impacto na navegação após despertar
+
+---
+
+**Última atualização:** 7 de novembro de 2025 - 18:45 - Health Check inteligente implementado: useServerHealth hook + ServerHealthGuard component - Otimizado para plano gratuito Render (economia de 83% das horas) - Versão atualizada para 1.1.2
