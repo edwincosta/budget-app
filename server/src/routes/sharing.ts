@@ -373,11 +373,11 @@ router.get('/active', auth, async (req: BudgetAuthRequest, res) => {
       })
     ]);
 
-    res.json({ 
-      data: { 
-        sharedByMe, 
-        sharedWithMe 
-      } 
+    res.json({
+      data: {
+        sharedByMe,
+        sharedWithMe
+      }
     });
   } catch (error) {
     console.error('Error fetching active shares:', error);
