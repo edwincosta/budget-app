@@ -189,19 +189,6 @@ app.use(errorHandler);
 
 console.log('✅ Error handlers configured');
 
-// Graceful shutdown
-process.on('SIGTERM', async () => {
-  console.log('SIGTERM received, shutting down gracefully');
-  await prisma.$disconnect();
-  process.exit(0);
-});
-
-process.on('SIGINT', async () => {
-  console.log('SIGINT received, shutting down gracefully');
-  await prisma.$disconnect();
-  process.exit(0);
-});
-
 // Export app for testing
 export default app;
 
@@ -232,17 +219,39 @@ if (require.main === module) {
       });
 
       // Graceful shutdown
-      const shutdown = async () => {
-        console.log('🛑 Shutting down server...');
-        await prisma.$disconnect();
-        server.close(() => {
-          console.log('✅ Server closed');
-          process.exit(0);
-        });
+      let isShuttingDown = false;
+      const shutdown = async (signal: string) => {
+        if (isShuttingDown) {
+          console.log(`⚠️ Already shutting down, ignoring ${signal}...`);
+          return;
+        }
+
+        isShuttingDown = true;
+        console.log(`🛑 ${signal} received, shutting down gracefully...`);
+
+        try {
+          await prisma.$disconnect();
+          console.log('✅ Database disconnected');
+
+          server.close(() => {
+            console.log('✅ Server closed');
+            process.exit(0);
+          });
+
+          // Force exit after 10 seconds if server doesn't close gracefully
+          setTimeout(() => {
+            console.log('⚠️ Force closing server after timeout');
+            process.exit(1);
+          }, 10000);
+
+        } catch (error) {
+          console.error('❌ Error during shutdown:', error);
+          process.exit(1);
+        }
       };
 
-      process.on('SIGTERM', shutdown);
-      process.on('SIGINT', shutdown);
+      process.on('SIGTERM', () => shutdown('SIGTERM'));
+      process.on('SIGINT', () => shutdown('SIGINT'));
 
       // Run seed in development mode after server starts
       if (process.env.NODE_ENV === 'development' || !process.env.NODE_ENV) {
