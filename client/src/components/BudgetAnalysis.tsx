@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Target, AlertTriangle, CheckCircle, TrendingUp, DollarSign } from 'lucide-react'
 import { budgetService } from '@/services/api'
+import { BudgetStatus } from '../types'
 
 interface Budget {
   id: string;
@@ -14,7 +15,7 @@ interface Budget {
   spentAmount: number;
   remainingAmount: number;
   percentage: number;
-  status: 'good' | 'warning' | 'exceeded';
+  status: BudgetStatus;
   period: string;
 }
 
@@ -61,13 +62,13 @@ export default function BudgetAnalysis({ period, budgetId }: BudgetAnalysisProps
     }).format(value);
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: BudgetStatus) => {
     switch (status) {
-      case 'good':
+      case 'GOOD':
         return 'text-green-600';
-      case 'warning':
+      case 'WARNING':
         return 'text-yellow-600';
-      case 'exceeded':
+      case 'EXCEEDED':
         return 'text-red-600';
       default:
         return 'text-gray-600';
@@ -166,7 +167,7 @@ export default function BudgetAnalysis({ period, budgetId }: BudgetAnalysisProps
               <dt className="text-sm font-medium text-gray-500 truncate">% Utilizado</dt>
             </div>
             <dd className="mt-1 flex items-baseline justify-between">
-              <div className={`flex items-baseline text-2xl font-semibold ${getStatusColor(totalPercentage > 100 ? 'over' : totalPercentage > 90 ? 'near' : 'under')}`}>
+              <div className={`flex items-baseline text-2xl font-semibold ${getStatusColor(totalPercentage > 100 ? 'EXCEEDED' : totalPercentage > 90 ? 'WARNING' : 'GOOD')}`}>
                 {totalBudget > 0 ? totalPercentage.toFixed(1) : '0.0'}%
               </div>
               <div className={`inline-flex items-baseline px-2.5 py-0.5 rounded-full text-sm font-medium md:mt-2 lg:mt-0 ${
