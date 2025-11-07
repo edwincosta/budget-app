@@ -12,6 +12,7 @@ import Sharing from "@/pages/Sharing";
 import ImportPage from "@/pages/ImportPage";
 import TestPage from "@/pages/TestPage";
 import Layout from "@/components/Layout";
+import ServerHealthGuard from "@/components/ServerHealthGuard";
 import { BudgetProvider } from "@/contexts/BudgetContext";
 import { UIProvider } from "@/contexts/UIContext";
 
@@ -24,7 +25,7 @@ function App() {
   const isAuthenticated = authService.isAuthenticated();
 
   return (
-    <>
+    <ServerHealthGuard>
       <Routes>
         <Route
           path="/login"
@@ -58,7 +59,7 @@ function App() {
           }
         />
       </Routes>
-    </>
+    </ServerHealthGuard>
   );
 }
 
