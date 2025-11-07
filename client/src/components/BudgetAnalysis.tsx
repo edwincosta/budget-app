@@ -231,7 +231,7 @@ export default function BudgetAnalysis({ period, budgetId }: BudgetAnalysisProps
         <h3 className="text-lg font-semibold mb-4">Recomendações</h3>
         <div className="space-y-3">
           {budgets
-            .filter(budget => budget.status === 'exceeded')
+            .filter(budget => budget.status === 'EXCEEDED')
             .map(budget => (
               <div key={budget.id} className="flex items-start space-x-3 p-3 bg-red-50 rounded-lg">
                 <AlertTriangle className="w-5 h-5 text-red-600 mt-0.5" />
@@ -247,7 +247,7 @@ export default function BudgetAnalysis({ period, budgetId }: BudgetAnalysisProps
             ))}
           
           {budgets
-            .filter(budget => budget.status === 'warning')
+            .filter(budget => budget.status === 'WARNING')
             .map(budget => (
               <div key={budget.id} className="flex items-start space-x-3 p-3 bg-yellow-50 rounded-lg">
                 <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5" />
@@ -262,7 +262,7 @@ export default function BudgetAnalysis({ period, budgetId }: BudgetAnalysisProps
               </div>
             ))}
 
-          {budgets.filter(budget => budget.status === 'exceeded' || budget.status === 'warning').length === 0 && (
+          {budgets.filter(budget => budget.status === 'EXCEEDED' || budget.status === 'WARNING').length === 0 && (
             <div className="flex items-start space-x-3 p-3 bg-green-50 rounded-lg">
               <CheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
               <div>
