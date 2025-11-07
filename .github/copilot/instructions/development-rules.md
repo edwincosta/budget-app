@@ -5,12 +5,14 @@
 ### 📋 **PROTOCOLO OBRIGATÓRIO:**
 
 #### 1. **PRÉ-DESENVOLVIMENTO**
+
 - [ ] **Consultar `copilot-context.md`** - Arquivo principal com todas as regras
 - [ ] **Verificar padrões de responsividade** estabelecidos
 - [ ] **Validar compatibilidade com compartilhamento** de orçamentos
 - [ ] **Confirmar requisitos de segurança** e isolamento
 
 #### 2. **DURANTE O DESENVOLVIMENTO**
+
 - [ ] **Aplicar padrões responsivos**: `max-w-7xl mx-auto px-4 sm:px-6 lg:px-8`
 - [ ] **Implementar suporte a compartilhamento**: Props `budgetId?: string`
 - [ ] **Usar middleware de segurança**: `auth`, `budgetAuth`, `requireWritePermission`
@@ -18,8 +20,9 @@
 - [ ] **Validar permissões**: READ vs WRITE em orçamentos compartilhados
 
 #### 3. **PÓS-DESENVOLVIMENTO**
+
 - [ ] **OBRIGATÓRIO: Atualizar `copilot-context.md`**
-- [ ] **Documentar novas funcionalidades** 
+- [ ] **Documentar novas funcionalidades**
 - [ ] **Adicionar exemplos de código** se aplicável
 - [ ] **Registrar data da atualização**
 - [ ] **Testar responsividade** em desktop, tablet e mobile
@@ -28,48 +31,57 @@
 ## 🏗️ **ARQUITETURA BUDGET-CENTRIC**
 
 ### **Princípios Fundamentais:**
+
 1. **Tudo pertence a um orçamento** - Nunca criar entidades órfãs
 2. **Isolamento total** - Dados de orçamentos diferentes nunca se misturam
 3. **Permissões granulares** - READ/WRITE respeitadas em toda interface
 4. **Validação multicamada** - Frontend + Middleware + Controller + Database
 
 ### **Padrões de API:**
+
 ```typescript
 // Orçamento próprio
 GET /api/accounts
 POST /api/transactions
 
-// Orçamento compartilhado  
+// Orçamento compartilhado
 GET /api/budgets/:budgetId/accounts
 POST /api/budgets/:budgetId/transactions
 ```
 
 ### **Padrões de Interface:**
+
 ```typescript
 // Sempre verificar permissões
 const { activeBudget, isOwner } = useBudget();
-const canWrite = isOwner || activeBudget?.permission === 'WRITE';
+const canWrite = isOwner || activeBudget?.permission === "WRITE";
 
 // Banner para orçamentos compartilhados
-{activeBudget && (
-  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-    <Users className="h-5 w-5 text-blue-600 mr-3" />
-    <div>
-      <h3>Visualizando: {activeBudget.budget?.name}</h3>
-      <p>Por {activeBudget.budget?.owner?.name} • {activeBudget.permission}</p>
+{
+  activeBudget && (
+    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <Users className="h-5 w-5 text-blue-600 mr-3" />
+      <div>
+        <h3>Visualizando: {activeBudget.budget?.name}</h3>
+        <p>
+          Por {activeBudget.budget?.owner?.name} • {activeBudget.permission}
+        </p>
+      </div>
     </div>
-  </div>
-)}
+  );
+}
 ```
 
 ## 📱 **PADRÕES DE RESPONSIVIDADE**
 
 ### **Breakpoints Obrigatórios (Mobile First):**
+
 - **Mobile (< 768px)**: Menu hamburger + drawer lateral
 - **Tablet (768px - 1024px)**: Bottom navigation com ícones
 - **Desktop (> 1024px)**: Sidebar permanente
 
 ### **Container Padrão:**
+
 ```typescript
 <div className="min-h-screen bg-gray-50">
   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -79,6 +91,7 @@ const canWrite = isOwner || activeBudget?.permission === 'WRITE';
 ```
 
 ### **Layout Responsivo:**
+
 ```typescript
 // Cards - linha para coluna
 <div className="flex flex-col md:flex-row gap-4">
@@ -101,6 +114,7 @@ const canWrite = isOwner || activeBudget?.permission === 'WRITE';
 ```
 
 ### **Botões e Formulários:**
+
 ```typescript
 <button className="w-full md:w-auto px-4 py-2 bg-blue-600 text-white rounded-md">
   {/* Mobile: full width, Desktop: auto width */}
@@ -108,6 +122,7 @@ const canWrite = isOwner || activeBudget?.permission === 'WRITE';
 ```
 
 ### **🚫 NUNCA Fazer:**
+
 ```typescript
 // ❌ Larguras fixas que causam scroll horizontal
 <div className="w-[1200px]">
@@ -122,20 +137,26 @@ const canWrite = isOwner || activeBudget?.permission === 'WRITE';
 ## 🔒 **PADRÕES DE SEGURANÇA**
 
 ### **Middleware Obrigatório:**
+
 ```typescript
 // Rotas públicas
-router.post('/register', AuthController.register);
+router.post("/register", AuthController.register);
 
 // Rotas autenticadas
 router.use(auth);
-router.get('/accounts', AccountController.getAccounts);
+router.get("/accounts", AccountController.getAccounts);
 
 // Rotas de orçamento específico
-router.use('/:budgetId/*', budgetAuth);
-router.post('/:budgetId/transactions', requireWritePermission, TransactionController.create);
+router.use("/:budgetId/*", budgetAuth);
+router.post(
+  "/:budgetId/transactions",
+  requireWritePermission,
+  TransactionController.create
+);
 ```
 
 ### **Validação de Queries:**
+
 ```typescript
 // SEMPRE filtrar por orçamento
 const accounts = await prisma.account.findMany({
@@ -147,26 +168,78 @@ const accounts = await prisma.account.findMany({
           shares: {
             some: {
               sharedWithId: req.user!.id,
-              status: 'ACCEPTED'
-            }
-          }
-        }
-      ]
-    }
-  }
+              status: "ACCEPTED",
+            },
+          },
+        },
+      ],
+    },
+  },
 });
 ```
 
 ## 📝 **PROCESSO DE ATUALIZAÇÃO DO CONTEXTO**
 
+## 📦 **VERSIONAMENTO SEMÂNTICO OBRIGATÓRIO**
+
+### **Estrutura de Versão:**
+
+- **OBRIGATÓRIO**: `package.json` do client e server devem sempre usar versionamento de 3 níveis
+- **Formato**: `"version": "MAJOR.MINOR.PATCH"`
+- **Exemplo**: `"version": "1.2.3"`
+
+### **Critérios para Incremento:**
+
+- **MAJOR (X)**: Mudanças incompatíveis na API ou breaking changes
+  - Alterações que quebram compatibilidade
+  - Mudanças na estrutura de dados que requerem migração
+  - Remoção de funcionalidades
+- **MINOR (Y)**: Novas funcionalidades mantendo compatibilidade
+  - Adição de novos endpoints
+  - Novas funcionalidades na interface
+  - Melhorias que não quebram código existente
+- **PATCH (Z)**: Correções de bugs e pequenas melhorias
+  - Bug fixes
+  - Melhorias de performance
+  - Ajustes de UI/UX menores
+
+### **Regras de Sincronização:**
+
+- **Client e server SEMPRE devem ter a mesma versão**
+- **Atualizar ambos os `package.json` simultaneamente**
+- **Nunca commitar com versões diferentes**
+
+### **Processo de Atualização:**
+
+```bash
+# 1. Atualizar package.json do client
+cd client && npm version patch|minor|major
+
+# 2. Atualizar package.json do server para a mesma versão
+cd ../server && npm version <mesma-versão>
+
+# 3. Commit das alterações
+git add client/package.json server/package.json
+git commit -m "chore: bump version to X.Y.Z"
+```
+
+### **Verificação Obrigatória:**
+
+```bash
+# Sempre verificar se as versões estão sincronizadas
+grep '"version"' client/package.json server/package.json
+```
+
 ### **Quando Atualizar:**
+
 - ✅ Novas funcionalidades implementadas
-- ✅ Alterações em APIs existentes  
+- ✅ Alterações em APIs existentes
 - ✅ Mudanças na estrutura de dados
 - ✅ Novos padrões ou regras estabelecidos
 - ✅ Correções de bugs que afetam a arquitetura
 
 ### **Como Atualizar:**
+
 1. **Localizar seção apropriada** no `copilot-context.md`
 2. **Adicionar/atualizar documentação** técnica
 3. **Incluir exemplos de código** quando relevante
@@ -174,8 +247,9 @@ const accounts = await prisma.account.findMany({
 5. **Revisar consistência** com resto da documentação
 
 ### **Seções a Considerar:**
+
 - 🎯 Funcionalidades Principais
-- 🏗️ Arquitetura do Projeto  
+- 🏗️ Arquitetura do Projeto
 - 📊 Modelo de Dados
 - 🔄 Fluxos de Trabalho
 - 🎨 Padrões de Código
@@ -185,6 +259,7 @@ const accounts = await prisma.account.findMany({
 ---
 
 **⚠️ O não cumprimento dessas regras pode resultar em:**
+
 - Quebra do sistema de compartilhamento
 - Vulnerabilidades de segurança
 - Interface não responsiva
