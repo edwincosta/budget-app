@@ -20,7 +20,8 @@ const ShareManager: React.FC = () => {
 
   const permissionLabels: Record<SharePermission, string> = {
     READ: 'Apenas Visualização (pode ver todos os dados do orçamento)',
-    WRITE: 'Visualização e Edição (pode modificar contas, transações e orçamentos)'
+    WRITE: 'Visualização e Edição (pode modificar contas, transações e orçamentos)',
+    OWNER: 'Proprietário (controle total incluindo compartilhamento)'
   };
 
   useEffect(() => {
@@ -97,7 +98,7 @@ const ShareManager: React.FC = () => {
 
   const handleAcceptInvite = async (shareId: string) => {
     try {
-      await sharingService.respondToInvite(shareId, { action: 'accept' });
+      await sharingService.respondToInvite(shareId, { action: 'ACCEPT' });
       
       toast.success('Convite aceito com sucesso!');
       await loadData();
@@ -111,7 +112,7 @@ const ShareManager: React.FC = () => {
 
   const handleRejectInvite = async (shareId: string) => {
     try {
-      await sharingService.respondToInvite(shareId, { action: 'reject' });
+      await sharingService.respondToInvite(shareId, { action: 'REJECT' });
       
       toast.success('Convite rejeitado');
       await loadData();

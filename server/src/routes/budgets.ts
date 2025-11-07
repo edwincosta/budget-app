@@ -445,13 +445,13 @@ router.get('/analysis', auth, async (req: AuthRequest, res) => {
 
       const percentage = budgetAmount > 0 ? (spentAmount / budgetAmount) * 100 : 0;
 
-      let status: 'good' | 'warning' | 'exceeded';
+      let status: 'GOOD' | 'WARNING' | 'EXCEEDED';
       if (percentage <= 70) {
-        status = 'good';
+        status = 'GOOD';
       } else if (percentage <= 100) {
-        status = 'warning';
+        status = 'WARNING';
       } else {
-        status = 'exceeded';
+        status = 'EXCEEDED';
       }
 
       return {
@@ -1539,9 +1539,9 @@ router.get('/:budgetId/analysis', auth, budgetAuth, async (req: BudgetAuthReques
       const remainingAmount = budgetAmount - spentAmount;
       const percentage = budgetAmount > 0 ? (spentAmount / budgetAmount) * 100 : 0;
 
-      let status: 'good' | 'warning' | 'exceeded' = 'good';
-      if (percentage > 100) status = 'exceeded';
-      else if (percentage > 80) status = 'warning';
+      let status: 'GOOD' | 'WARNING' | 'EXCEEDED' = 'GOOD';
+      if (percentage > 100) status = 'EXCEEDED';
+      else if (percentage > 80) status = 'WARNING';
 
       analysis.push({
         id: item.id,

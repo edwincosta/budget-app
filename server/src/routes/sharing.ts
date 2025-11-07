@@ -373,11 +373,11 @@ router.get('/active', auth, async (req: BudgetAuthRequest, res) => {
       })
     ]);
 
-    res.json({ 
-      data: { 
-        sharedByMe, 
-        sharedWithMe 
-      } 
+    res.json({
+      data: {
+        sharedByMe,
+        sharedWithMe
+      }
     });
   } catch (error) {
     console.error('Error fetching active shares:', error);
@@ -416,7 +416,7 @@ router.put('/respond/:shareId', auth, async (req: BudgetAuthRequest, res): Promi
 
     const updatedShare = await prisma.budgetShare.update({
       where: { id: shareId },
-      data: { status: action === 'accept' ? 'ACCEPTED' : 'REJECTED' },
+      data: { status: action === 'ACCEPT' ? 'ACCEPTED' : 'REJECTED' },
       include: {
         budget: { select: { name: true } },
         sharedWith: { select: { name: true, email: true } }

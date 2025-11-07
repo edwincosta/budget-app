@@ -69,6 +69,8 @@ export interface Budget {
   category: Category;
 }
 
+export type BudgetStatus = 'GOOD' | 'WARNING' | 'EXCEEDED';
+
 export interface BudgetAnalysis {
   id: string;
   category: Category;
@@ -76,7 +78,7 @@ export interface BudgetAnalysis {
   spentAmount: number;
   remainingAmount: number;
   percentage: number;
-  status: 'good' | 'warning' | 'exceeded';
+  status: BudgetStatus;
   period: 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
 }
 
@@ -114,7 +116,7 @@ export interface BudgetShare {
 // Manter UserShare como alias para compatibilidade temporária
 export type UserShare = BudgetShare;
 
-export type SharePermission = 'READ' | 'WRITE';
+export type SharePermission = 'READ' | 'WRITE' | 'OWNER';
 
 export type ShareStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'REVOKED';
 
@@ -123,15 +125,17 @@ export interface ShareInviteRequest {
   permission: SharePermission;
 }
 
+export type ShareAction = 'ACCEPT' | 'REJECT';
+
 export interface ShareResponse {
-  action: 'accept' | 'reject';
+  action: ShareAction;
 }
 
 // Tipos para Sistema de Importação
 export interface ImportSession {
   id: string;
   filename: string;
-  fileType: 'CSV' | 'PDF';
+  fileType: ImportFileType;
   status: ImportStatus;
   totalTransactions: number;
   processedAt?: string;
@@ -212,4 +216,4 @@ export type ImportStatus =
   | 'ERROR'         // Erro no processamento
   | 'CANCELLED';    // Cancelado pelo usuário
 
-export type ImportFileType = 'CSV' | 'PDF';
+export type ImportFileType = 'CSV' | 'PDF' | 'EXCEL';

@@ -199,7 +199,7 @@ enum ShareStatus {
 model ImportSession {
   id                String            # Identificador único
   filename          String            # Nome do arquivo original
-  fileType          ImportFileType    # Tipo do arquivo (CSV/PDF)
+  fileType          ImportFileType    # Tipo do arquivo (CSV/PDF/EXCEL)
   accountId         String            # Conta de destino
   budgetId          String            # Orçamento
   status            ImportStatus      # Status da importação
@@ -209,8 +209,9 @@ model ImportSession {
 }
 
 enum ImportFileType {
-  CSV  # Arquivo CSV
-  PDF  # Arquivo PDF
+  CSV   # Arquivo CSV
+  PDF   # Arquivo PDF
+  EXCEL # Arquivo Excel (XLS/XLSX)
 }
 
 enum ImportStatus {
@@ -2381,4 +2382,79 @@ DELETE /api/budgets/:budgetId/transactions/:id  # Deletar transação
 
 ---
 
-**Última atualização:** 6 de novembro de 2025 - 20:30 - Implementação de criação automática de orçamento padrão
+## 🔧 TROUBLESHOOTING E PROBLEMAS COMUNS
+
+### **Erro PrismaClientUnknownRequestError em Importação**
+
+**Problema:** Erro ao fazer upload de arquivos CSV/Excel com mensagem "Invalid `prisma.importSession.create()` invocation"
+
+**Causa Raiz:** Inconsistência entre enum `ImportFileType` no código e no banco de dados
+
+**Sintomas:**
+
+- Controller usa `fileType: 'EXCEL'` mas banco só tem `CSV, PDF`
+- Erro ocorre especificamente com arquivos Excel detectados automaticamente
+- Funciona com CSV mas falha com XLS/XLSX
+
+**Solução:**
+
+1. **Verificar enum no schema**: Confirmar que `ImportFileType` inclui `EXCEL`
+
+```prisma
+enum ImportFileType {
+  CSV
+  PDF
+  EXCEL  // ← Deve estar presente
+}
+```
+
+2. **Executar migração**: Se EXCEL não estiver presente
+
+```bash
+# Adicionar EXCEL ao enum (PostgreSQL)
+ALTER TYPE "ImportFileType" ADD VALUE 'EXCEL';
+```
+
+3. **Verificar tipos TypeScript**: Garantir sincronização client/server
+
+```typescript
+// client/src/types/index.ts
+export enum ImportFileType {
+  CSV = "CSV",
+  PDF = "PDF",
+  EXCEL = "EXCEL", // ← Deve estar presente
+}
+```
+
+**Validação da Fix:**
+
+```bash
+# Testar endpoint
+curl -X POST http://localhost:3001/api/test/import-file-type \
+  -H "Content-Type: application/json" \
+  -d '{"fileType": "EXCEL"}'
+# Deve retornar: {"success":true,"fileType":"EXCEL"}
+```
+
+### **Enums Desatualizados**
+
+**Problema:** Valores enum em lowercase no banco vs UPPERCASE no código
+
+**Afetados:** `SharePermission`, `ShareStatus`, `ImportStatus`
+
+**Solução:** Padronizar todos para UPPERCASE e adicionar valores ausentes:
+
+```sql
+-- Adicionar valores UPPERCASE
+ALTER TYPE "SharePermission" ADD VALUE 'READ';
+ALTER TYPE "SharePermission" ADD VALUE 'WRITE';
+ALTER TYPE "SharePermission" ADD VALUE 'OWNER';
+
+-- Atualizar dados existentes
+UPDATE "BudgetShare" SET permission = 'READ' WHERE permission = 'read';
+UPDATE "BudgetShare" SET permission = 'WRITE' WHERE permission = 'write';
+```
+
+---
+
+**Última atualização:** 7 de novembro de 2025 - 14:45 - Adicionado EXCEL ao enum ImportFileType e troubleshooting de enums
