@@ -2550,6 +2550,120 @@ enum ImportFileType {
 }
 ```
 
+2. **Executar migração**: `npx prisma migrate dev` para aplicar alterações
+3. **Regenerar cliente**: `npx prisma generate`
+
+---
+
+## 🧪 **SISTEMA DE TESTES DE IMPORTAÇÃO DE EXTRATOS**
+
+### **Script Oficial de Teste - Novembro 2025**
+
+#### **✅ Funcionalidades do Sistema de Teste:**
+
+- **Cobertura Completa**: Testa 19 arquivos de 8 bancos diferentes automaticamente
+- **Zero Dependências**: Implementação com FormData customizado (Node.js 18+ nativo)
+- **Configuração Automática**: Executa seed do banco e valida containers Docker
+- **Relatório Detalhado**: Estatísticas por banco, detecção de duplicatas, taxa de sucesso
+- **Validação de API**: Testa fluxo completo via HTTP (autenticação + upload + parsing)
+
+#### **📋 Arquivos do Sistema:**
+
+1. **`test-import-extratos.js`** - Script Node.js principal (15KB)
+2. **`test-import-extratos.sh`** - Script bash automatizado (3.8KB)
+
+#### **🚀 Execução:**
+
+```bash
+# SEMPRE usar este comando (da raiz do projeto)
+./test-import-extratos.sh
+
+# O script automaticamente:
+# ✅ Verifica se Docker está rodando
+# ✅ Inicia containers se necessário  
+# ✅ Aguarda API estar pronta
+# ✅ Executa seed do banco (dados de desenvolvimento)
+# ✅ Roda teste de todos os 19 arquivos
+# ✅ Gera relatório detalhado
+```
+
+#### **📊 Últimos Resultados (Novembro 2025):**
+
+```
+📊 RELATÓRIO DE TESTE
+=====================
+📁 Arquivos testados: 19
+✅ Sucessos: 15 (79%)
+❌ Erros: 4 (21%)
+💰 Transações processadas: 242
+🆕 Novas transações: 0 (duplicatas ignoradas)
+
+🏦 BANCOS TESTADOS:
+✅ BTG (Excel) - 5 transações
+✅ Bradesco (CSV) - 34 transações  
+✅ C6 Bank (CSV) - 15 transações
+✅ Clear (CSV) - 3 transações
+✅ Inter (CSV) - 8 transações
+✅ Itaú (XLS/TXT) - 34 transações
+✅ Nubank (CSV) - 59 transações
+✅ XP (CSV) - 84 transações
+
+❌ ARQUIVOS COM PROBLEMAS:
+• 2 PDFs BTG (formato não suportado)
+• 2 arquivos Excel Clear/Bradesco (estrutura específica)
+```
+
+#### **🔧 Implementação Técnica:**
+
+**FormData Customizado (Zero Dependências):**
+
+```javascript
+function createMultipartFormData(filePath, accountId) {
+  // Implementação manual de multipart/form-data
+  // Usa apenas APIs nativas: Buffer, fs, path
+  // Compatível com Node.js 18+
+  // Não requer instalação de pacotes externos
+}
+```
+
+**Autenticação e Contexto:**
+
+```javascript
+// Fluxo de teste completo:
+// 1. Login com joao@example.com
+// 2. Obter orçamento ativo
+// 3. Selecionar conta para importação
+// 4. Testar upload de cada arquivo
+// 5. Validar transações importadas
+// 6. Gerar relatório detalhado
+```
+
+#### **⚠️ REGRAS OBRIGATÓRIAS:**
+
+1. **NÃO criar novos scripts** de teste similares
+2. **SEMPRE usar** `./test-import-extratos.sh` existente
+3. **EXECUTAR antes e depois** de alterações nos parsers
+4. **VALIDAR** se importações continuam funcionando
+5. **ANALISAR relatório** em caso de falhas
+
+#### **🎯 Casos de Uso:**
+
+- **Desenvolvimento**: Validar alterações nos parsers de importação
+- **Regressão**: Garantir que updates não quebrem importações existentes  
+- **Deploy**: Verificar funcionalidade antes de releases
+- **Debug**: Identificar problemas específicos por banco/formato
+
+#### **📝 Configuração:**
+
+- **Usuário de Teste**: `joao@example.com` / `123456`
+- **Endpoint API**: `http://localhost:3001/api/import/upload`
+- **Arquivos**: `/examples/extratos/` (19 arquivos)
+- **Timeout**: 1 segundo entre testes (não sobrecarregar API)
+
+---
+
+**ÚLTIMA ATUALIZAÇÃO**: 10 de Novembro de 2025 - Sistema de teste oficial implementado e documentado
+
 2. **Executar migração**: Se EXCEL não estiver presente
 
 ```bash
