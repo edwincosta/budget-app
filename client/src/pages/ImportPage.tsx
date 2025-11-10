@@ -15,10 +15,12 @@ import {
   Tag,
   Users,
   Trash2,
+  Edit3,
 } from "lucide-react";
 import { useBudget } from "@/contexts/BudgetContext";
 import { accountService, importService } from "@/services/api";
 import type { Account, ImportSession } from "@/types";
+import Loading from "@/components/Loading";
 
 interface ImportPageProps {}
 
@@ -689,6 +691,15 @@ const ClassificationStep: React.FC<ClassificationStepProps> = ({
     queryFn: () => importService.getSessionDetails(sessionId, budgetId),
   });
 
+  // Estado para controlar loading individual por transação
+  const [loadingTransactions, setLoadingTransactions] = useState<Set<string>>(
+    new Set()
+  );
+  // Estado para controlar qual transação está sendo editada
+  const [editingTransactions, setEditingTransactions] = useState<Set<string>>(
+    new Set()
+  );
+
   // Mutation para classificar transação
   const classifyMutation = useMutation({
     mutationFn: ({
@@ -699,6 +710,10 @@ const ClassificationStep: React.FC<ClassificationStepProps> = ({
       categoryId: string;
     }) =>
       importService.classifyTransaction(transactionId, categoryId, budgetId),
+    onMutate: ({ transactionId }) => {
+      // Adicionar transação ao estado de loading
+      setLoadingTransactions((prev) => new Set(prev).add(transactionId));
+    },
     onSuccess: () => {
       refetch();
     },
@@ -706,6 +721,20 @@ const ClassificationStep: React.FC<ClassificationStepProps> = ({
       toast.error(
         error.response?.data?.message || "Erro ao classificar transação"
       );
+    },
+    onSettled: (_data, _error, { transactionId }) => {
+      // Remover transação do estado de loading quando terminar (sucesso ou erro)
+      setLoadingTransactions((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(transactionId);
+        return newSet;
+      });
+      // Remover do estado de edição também
+      setEditingTransactions((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(transactionId);
+        return newSet;
+      });
     },
   });
 
@@ -739,6 +768,10 @@ const ClassificationStep: React.FC<ClassificationStepProps> = ({
 
   const handleClassify = (transactionId: string, categoryId: string) => {
     classifyMutation.mutate({ transactionId, categoryId });
+  };
+
+  const handleEditTransaction = (transactionId: string) => {
+    setEditingTransactions((prev) => new Set(prev).add(transactionId));
   };
 
   const handleConfirmImport = (importDuplicates = false) => {
@@ -863,7 +896,17 @@ const ClassificationStep: React.FC<ClassificationStepProps> = ({
 
                   {/* Classificação */}
                   <div className="flex items-center space-x-3">
-                    {transaction.isClassified ? (
+                    {loadingTransactions.has(transaction.id) ? (
+                      // Mostrar loading específico para esta transação
+                      <div className="flex items-center space-x-2">
+                        <Loading size="sm" overlay={false} message="" />
+                        <span className="text-sm text-gray-600">
+                          Atualizando...
+                        </span>
+                      </div>
+                    ) : transaction.isClassified &&
+                      !editingTransactions.has(transaction.id) ? (
+                      // Transação classificada - mostrar categoria com opção de editar
                       <div className="flex items-center space-x-2">
                         <Tag className="h-4 w-4 text-green-600" />
                         <span
@@ -873,8 +916,20 @@ const ClassificationStep: React.FC<ClassificationStepProps> = ({
                           {transaction.category?.name}
                         </span>
                         <CheckCircle className="h-4 w-4 text-green-600" />
+                        {canWrite && (
+                          <button
+                            onClick={() =>
+                              handleEditTransaction(transaction.id)
+                            }
+                            className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                            title="Editar categoria"
+                          >
+                            <Edit3 className="h-4 w-4" />
+                          </button>
+                        )}
                       </div>
                     ) : (
+                      // Transação não classificada ou em edição - mostrar dropdown
                       <div className="flex items-center space-x-2">
                         <select
                           onChange={(e) => {
@@ -883,7 +938,12 @@ const ClassificationStep: React.FC<ClassificationStepProps> = ({
                             }
                           }}
                           className="px-3 py-1 border border-gray-300 rounded-md text-sm"
-                          disabled={classifyMutation.isPending}
+                          disabled={!canWrite}
+                          defaultValue={
+                            editingTransactions.has(transaction.id)
+                              ? transaction.categoryId || ""
+                              : ""
+                          }
                         >
                           <option value="">Selecionar categoria...</option>
                           {sessionDetails?.availableCategories
@@ -894,6 +954,21 @@ const ClassificationStep: React.FC<ClassificationStepProps> = ({
                               </option>
                             ))}
                         </select>
+                        {editingTransactions.has(transaction.id) && (
+                          <button
+                            onClick={() => {
+                              setEditingTransactions((prev) => {
+                                const newSet = new Set(prev);
+                                newSet.delete(transaction.id);
+                                return newSet;
+                              });
+                            }}
+                            className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                            title="Cancelar edição"
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
