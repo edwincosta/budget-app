@@ -155,7 +155,6 @@ enum BudgetPeriod {
 enum SharePermission {
   READ
   WRITE
-  OWNER
 }
 
 enum ShareStatus {

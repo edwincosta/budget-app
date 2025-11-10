@@ -116,7 +116,7 @@ export interface BudgetShare {
 // Manter UserShare como alias para compatibilidade temporária
 export type UserShare = BudgetShare;
 
-export type SharePermission = 'READ' | 'WRITE' | 'OWNER';
+export type SharePermission = 'READ' | 'WRITE';
 
 export type ShareStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'REVOKED';
 

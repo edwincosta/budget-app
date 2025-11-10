@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Plus, Pencil, Trash2, Users } from "lucide-react";
-import api from "@/services/api";
+import { categoryService } from "@/services/api";
 import { useBudget } from "@/contexts/BudgetContext";
 import { useUXComponents } from "@/hooks/useUXComponents";
 
@@ -39,6 +39,10 @@ const COLORS = [
 const Categories = () => {
   const { activeBudget, isOwner } = useBudget();
   const { executeWithUX, confirmDelete, showWarning } = useUXComponents();
+
+  // Pattern: activeBudget = null → orçamento próprio, activeBudget = obj → compartilhado
+  const budgetId = activeBudget?.budgetId;
+
   const [categories, setCategories] = useState<Category[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -51,8 +55,14 @@ const Categories = () => {
 
   const loadCategories = async () => {
     await executeWithUX(async () => {
-      const response = await api.get("/categories");
-      setCategories(response.data.data || []);
+      console.log(
+        "🔍 Fetching categories - Pattern:",
+        activeBudget ? "SHARED_BUDGET" : "OWN_BUDGET",
+        "budgetId:",
+        budgetId
+      );
+      const response = await categoryService.getCategories(budgetId);
+      setCategories(response || []);
     }, "Carregando categorias...");
   };
 
@@ -78,9 +88,13 @@ const Categories = () => {
     await executeWithUX(
       async () => {
         if (editingCategory) {
-          await api.put(`/categories/${editingCategory.id}`, formData);
+          await categoryService.updateCategory(
+            editingCategory.id,
+            formData,
+            budgetId
+          );
         } else {
-          await api.post("/categories", formData);
+          await categoryService.createCategory(formData, budgetId);
         }
 
         setIsModalOpen(false);
@@ -115,9 +129,12 @@ const Categories = () => {
     confirmDelete("esta categoria", async () => {
       await executeWithUX(
         async () => {
-          console.log(`Making DELETE request to /categories/${id}`);
-          const response = await api.delete(`/categories/${id}`);
-          console.log("Delete response:", response.data);
+          console.log(
+            `Making DELETE request to categories/${id} with budgetId:`,
+            budgetId
+          );
+          await categoryService.deleteCategory(id, budgetId);
+          console.log("Delete completed successfully");
           await loadCategories();
         },
         "Excluindo categoria...",
@@ -154,7 +171,9 @@ const Categories = () => {
               <p className="text-sm text-blue-600">
                 Orçamento compartilhado por {activeBudget.budget?.owner?.name} •
                 Permissão:{" "}
-                {activeBudget.permission === "READ" ? "Visualização" : "Edição"}
+                {activeBudget.permission?.toUpperCase() === "READ"
+                  ? "Visualização"
+                  : "Edição"}
               </p>
             </div>
           </div>
@@ -165,7 +184,7 @@ const Categories = () => {
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
           Categorias
         </h1>
-        {(isOwner || activeBudget?.permission === "WRITE") && (
+        {(isOwner || activeBudget?.permission?.toUpperCase() === "WRITE") && (
           <button
             onClick={openCreateModal}
             className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors w-full sm:w-auto"

@@ -16,6 +16,13 @@ router.post('/:budgetId/share', auth, budgetAuth, requireOwnership, async (req: 
       return;
     }
 
+    // Normalizar e validar permission
+    const normalizedPermission = permission?.toUpperCase();
+    if (!normalizedPermission || !['READ', 'WRITE'].includes(normalizedPermission)) {
+      res.status(400).json({ message: 'Invalid permission. Must be READ or WRITE' });
+      return;
+    }
+
     // Verificar se o usuário existe
     const userToShare = await prisma.user.findUnique({
       where: { email },
@@ -53,7 +60,7 @@ router.post('/:budgetId/share', auth, budgetAuth, requireOwnership, async (req: 
       data: {
         budgetId: req.budget!.id,
         sharedWithId: userToShare.id,
-        permission: permission,
+        permission: normalizedPermission,
         status: 'PENDING'
       },
       include: {
@@ -228,10 +235,17 @@ router.delete('/:budgetId/shares/:shareId', auth, budgetAuth, async (req: Budget
 // Enviar convite (rota direta)
 router.post('/invite', auth, async (req: BudgetAuthRequest, res): Promise<void> => {
   try {
-    const { email, permissions = ['READ_ACCOUNTS'] } = req.body;
+    const { email, permission = 'READ' } = req.body;
 
     if (!email) {
       res.status(400).json({ message: 'Email is required' });
+      return;
+    }
+
+    // Normalizar e validar permission
+    const normalizedPermission = permission?.toUpperCase();
+    if (!normalizedPermission || !['READ', 'WRITE'].includes(normalizedPermission)) {
+      res.status(400).json({ message: 'Invalid permission. Must be READ or WRITE' });
       return;
     }
 
@@ -283,7 +297,7 @@ router.post('/invite', auth, async (req: BudgetAuthRequest, res): Promise<void> 
       data: {
         budgetId: defaultBudget.id,
         sharedWithId: userToShare.id,
-        permission: 'READ',
+        permission: normalizedPermission,
         status: 'PENDING'
       },
       include: {
@@ -391,8 +405,10 @@ router.put('/respond/:shareId', auth, async (req: BudgetAuthRequest, res): Promi
     const { shareId } = req.params;
     const { action } = req.body;
 
-    if (!action || !['accept', 'reject'].includes(action)) {
-      res.status(400).json({ message: 'Invalid action' });
+    // Normalizar action para UPPERCASE e validar
+    const normalizedAction = action?.toUpperCase();
+    if (!normalizedAction || !['ACCEPT', 'REJECT'].includes(normalizedAction)) {
+      res.status(400).json({ message: 'Invalid action. Must be ACCEPT or REJECT' });
       return;
     }
 
@@ -416,7 +432,7 @@ router.put('/respond/:shareId', auth, async (req: BudgetAuthRequest, res): Promi
 
     const updatedShare = await prisma.budgetShare.update({
       where: { id: shareId },
-      data: { status: action === 'ACCEPT' ? 'ACCEPTED' : 'REJECTED' },
+      data: { status: normalizedAction === 'ACCEPT' ? 'ACCEPTED' : 'REJECTED' },
       include: {
         budget: { select: { name: true } },
         sharedWith: { select: { name: true, email: true } }
