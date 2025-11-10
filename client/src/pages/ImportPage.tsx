@@ -372,7 +372,8 @@ export const ImportPage: React.FC<ImportPageProps> = () => {
               <div className="flex items-center space-x-2">
                 <FileSpreadsheet className="h-4 w-4 text-green-600" />
                 <span>
-                  <strong>CSV:</strong> Extratos de bancos como Nubank, Itaú, BB
+                  <strong>CSV/Excel:</strong> Extratos de bancos (CSV, XLS,
+                  XLSX)
                 </span>
               </div>
               <div className="flex items-center space-x-2">
@@ -538,7 +539,7 @@ export const ImportPage: React.FC<ImportPageProps> = () => {
                     Clique ou arraste o arquivo aqui
                   </p>
                   <p className="text-sm text-gray-500">
-                    Suporta CSV e PDF até 10MB
+                    Suporta CSV, Excel (XLS/XLSX) e PDF até 10MB
                   </p>
                 </div>
               </div>
@@ -547,7 +548,7 @@ export const ImportPage: React.FC<ImportPageProps> = () => {
             <input
               ref={fileInputRef}
               type="file"
-              accept=".csv,.pdf,.txt"
+              accept=".csv,.pdf,.txt,.xls,.xlsx"
               onChange={handleFileSelect}
               className="hidden"
             />

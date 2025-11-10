@@ -32,22 +32,27 @@ export class BankParserFactory {
 
     /**
      * Detecta o banco baseado no arquivo e retorna o parser apropriado
+     * @param filePath Caminho do arquivo (pode ser temporário)
+     * @param originalName Nome original do arquivo (opcional)
      */
-    static detectParser(filePath: string): BankParser | null {
+    static detectParser(filePath: string, originalName?: string): BankParser | null {
         try {
             // Lê as primeiras linhas do arquivo para análise
             const content = fs.readFileSync(filePath, 'utf8');
             const firstLines = content.split('\n').slice(0, 10); // Primeiras 10 linhas
 
+            // Usa nome original se fornecido, senão usa o caminho do arquivo
+            const fileNameForAnalysis = originalName || filePath;
+
             // Testa cada parser para ver qual pode processar o arquivo
             for (const parser of this.parsers) {
-                if (parser.canParse(filePath, firstLines)) {
-                    console.log(`🎯 Detector: ${parser.bankName} parser selecionado para ${filePath}`);
+                if (parser.canParse(fileNameForAnalysis, firstLines)) {
+                    console.log(`🎯 Detector: ${parser.bankName} parser selecionado para ${originalName || filePath}`);
                     return parser;
                 }
             }
 
-            console.log(`⚠️  Detector: Nenhum parser específico encontrado para ${filePath}`);
+            console.log(`⚠️  Detector: Nenhum parser específico encontrado para ${originalName || filePath}`);
             return null;
 
         } catch (error) {

@@ -15,16 +15,22 @@ const upload = multer({
         fileSize: 10 * 1024 * 1024 // 10MB max
     },
     fileFilter: (req, file, cb) => {
-        // Permite apenas CSV e PDF
-        const allowedTypes = ['text/csv', 'application/pdf', 'text/plain'];
-        const allowedExtensions = ['.csv', '.pdf', '.txt'];
+        // Permite CSV, PDF e Excel
+        const allowedTypes = [
+            'text/csv',
+            'application/pdf',
+            'text/plain',
+            'application/vnd.ms-excel', // .xls
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' // .xlsx
+        ];
+        const allowedExtensions = ['.csv', '.pdf', '.txt', '.xls', '.xlsx'];
 
         const fileExtension = path.extname(file.originalname).toLowerCase();
 
         if (allowedTypes.includes(file.mimetype) || allowedExtensions.includes(fileExtension)) {
             cb(null, true);
         } else {
-            cb(new Error('Tipo de arquivo não suportado. Envie apenas CSV ou PDF.'));
+            cb(new Error('Tipo de arquivo não suportado. Envie apenas CSV, Excel (XLS/XLSX) ou PDF.'));
         }
     }
 });

@@ -119,17 +119,17 @@ export class ImportController {
             try {
                 // Processa arquivo baseado no tipo
                 let parseResult;
+                let usedParser = 'unknown';
+                let bankParserSuccess = false;
+
                 if (fileType === 'PDF') {
                     parseResult = await PDFParser.parseFile(req.file.path, parseOptions);
-                } else if (fileType === 'EXCEL') {
-                    parseResult = await ExcelParser.parseFile(req.file.path, parseOptions);
+                    usedParser = 'PDF';
                 } else {
-                    // CSV - tenta parser específico primeiro, depois avançado, depois básico
-                    let usedParser = 'unknown';
-                    let bankParserSuccess = false;
+                    // Para Excel e CSV - tenta parser específico primeiro
 
-                    // 1. Tenta detectar parser específico por banco
-                    const bankParser = BankParserFactory.detectParser(req.file.path);
+                    // 1. Tenta detectar parser específico por banco (usando nome original)
+                    const bankParser = BankParserFactory.detectParser(req.file.path, req.file.originalname);
                     if (bankParser) {
                         try {
                             parseResult = await bankParser.parseFile(req.file.path, parseOptions);
@@ -142,32 +142,39 @@ export class ImportController {
                         }
                     }
 
-                    // 2. Se parser específico falhou, tenta parser avançado
+                    // 2. Se parser específico falhou, usa parser genérico baseado no tipo
                     if (!bankParserSuccess) {
-                        try {
-                            parseResult = await AdvancedCSVParser.parseFile(req.file.path, parseOptions);
-                            usedParser = 'AdvancedCSV';
-                            console.log(`✅ Advanced CSV parser processou ${parseResult?.transactions?.length || 0} transações`);
-                            console.log('🔍 Debug parseResult:', parseResult ? 'existe' : 'undefined');
-                            console.log('🔍 Debug transactions:', parseResult?.transactions ? 'existe' : 'undefined');
+                        if (fileType === 'EXCEL') {
+                            parseResult = await ExcelParser.parseFile(req.file.path, parseOptions);
+                            usedParser = 'GenericExcel';
+                            console.log(`✅ Generic Excel parser processou ${parseResult?.transactions?.length || 0} transações`);
+                        } else {
+                            // CSV - tenta parser avançado, depois básico
+                            try {
+                                parseResult = await AdvancedCSVParser.parseFile(req.file.path, parseOptions);
+                                usedParser = 'AdvancedCSV';
+                                console.log(`✅ Advanced CSV parser processou ${parseResult?.transactions?.length || 0} transações`);
+                                console.log('🔍 Debug parseResult:', parseResult ? 'existe' : 'undefined');
+                                console.log('🔍 Debug transactions:', parseResult?.transactions ? 'existe' : 'undefined');
 
-                            // Verificação adicional para debug
-                            if (!parseResult) {
-                                console.error('🚨 ERRO: AdvancedCSVParser retornou undefined!');
-                                throw new Error('AdvancedCSVParser retornou undefined');
-                            }
-                            if (!parseResult.transactions) {
-                                console.error('🚨 ERRO: AdvancedCSVParser retornou sem transactions!', parseResult);
-                                throw new Error('AdvancedCSVParser retornou sem transactions');
-                            }
-                        } catch (advancedError) {
-                            console.log('⚠️ Advanced parser falhou:', advancedError.message);
+                                // Verificação adicional para debug
+                                if (!parseResult) {
+                                    console.error('🚨 ERRO: AdvancedCSVParser retornou undefined!');
+                                    throw new Error('AdvancedCSVParser retornou undefined');
+                                }
+                                if (!parseResult.transactions) {
+                                    console.error('🚨 ERRO: AdvancedCSVParser retornou sem transactions!', parseResult);
+                                    throw new Error('AdvancedCSVParser retornou sem transactions');
+                                }
+                            } catch (advancedError) {
+                                console.log('⚠️ Advanced parser falhou:', advancedError.message);
 
-                            // 3. Última tentativa com parser básico
-                            parseResult = await CSVParser.parseFile(req.file.path, parseOptions);
-                            usedParser = 'BasicCSV';
-                            console.log(`✅ Basic CSV parser processou ${parseResult?.transactions?.length || 0} transações`);
-                            console.log('🔍 Debug basicParser result:', parseResult ? 'existe' : 'undefined');
+                                // 3. Última tentativa com parser básico
+                                parseResult = await CSVParser.parseFile(req.file.path, parseOptions);
+                                usedParser = 'BasicCSV';
+                                console.log(`✅ Basic CSV parser processou ${parseResult?.transactions?.length || 0} transações`);
+                                console.log('🔍 Debug basicParser result:', parseResult ? 'existe' : 'undefined');
+                            }
                         }
                     }
 
