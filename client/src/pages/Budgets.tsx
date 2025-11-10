@@ -143,7 +143,9 @@ export default function Budgets() {
               <p className="text-sm text-blue-600">
                 Orçamento compartilhado por {activeBudget.budget?.owner?.name} •
                 Permissão:{" "}
-                {activeBudget.permission === "READ" ? "Visualização" : "Edição"}
+                {activeBudget.permission?.toUpperCase() === "READ"
+                  ? "Visualização"
+                  : "Edição"}
               </p>
             </div>
           </div>
@@ -161,7 +163,7 @@ export default function Budgets() {
           </p>
         </div>
 
-        {(isOwner || activeBudget?.permission === "WRITE") && (
+        {(isOwner || activeBudget?.permission?.toUpperCase() === "WRITE") && (
           <div className="w-full lg:w-auto">
             {availableCategories.length === 0 ? (
               <div className="relative">

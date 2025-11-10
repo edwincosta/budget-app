@@ -29,7 +29,8 @@ export const ImportPage: React.FC<ImportPageProps> = () => {
   // - activeBudget = null → orçamento próprio (usar APIs /api/resource)
   // - activeBudget = objeto → orçamento compartilhado (usar APIs /api/budgets/:id/resource)
   const budgetId = activeBudget?.budgetId;
-  const canWrite = isOwner || activeBudget?.permission === "WRITE";
+  const canWrite =
+    isOwner || activeBudget?.permission?.toUpperCase() === "WRITE";
 
   // Debug logs - seguindo padrões do sistema
   console.log("🔍 ImportPage Debug:", {
@@ -319,7 +320,7 @@ export const ImportPage: React.FC<ImportPageProps> = () => {
                 >
                   Orçamento compartilhado por {activeBudget.budget?.owner?.name}{" "}
                   • Permissão:{" "}
-                  {activeBudget.permission === "READ"
+                  {activeBudget.permission?.toUpperCase() === "READ"
                     ? "Visualização"
                     : "Edição"}
                   {!canWrite && " (Não é possível importar arquivos)"}
@@ -675,7 +676,8 @@ const ClassificationStep: React.FC<ClassificationStepProps> = ({
 
   // Verificar permissões - pode escrever se é o owner ou se tem permissão WRITE
   const canWrite =
-    isOwner || (activeBudget && activeBudget.permission === "WRITE");
+    isOwner ||
+    (activeBudget && activeBudget.permission?.toUpperCase() === "WRITE");
 
   // Buscar detalhes da sessão
   const {

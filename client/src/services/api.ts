@@ -305,6 +305,23 @@ export const categoryService = {
     const response: AxiosResponse<{ data: Category[] }> = await api.get(url);
     return response.data.data || [];
   },
+
+  async createCategory(category: Omit<Category, 'id' | 'userId' | 'createdAt' | 'updatedAt'>, budgetId?: string): Promise<Category> {
+    const url = budgetId ? `/budgets/${budgetId}/categories` : '/categories';
+    const response: AxiosResponse<{ data: Category }> = await api.post(url, category);
+    return response.data.data;
+  },
+
+  async updateCategory(id: string, category: Partial<Omit<Category, 'id' | 'userId' | 'createdAt' | 'updatedAt'>>, budgetId?: string): Promise<Category> {
+    const url = budgetId ? `/budgets/${budgetId}/categories/${id}` : `/categories/${id}`;
+    const response: AxiosResponse<{ data: Category }> = await api.put(url, category);
+    return response.data.data;
+  },
+
+  async deleteCategory(id: string, budgetId?: string): Promise<void> {
+    const url = budgetId ? `/budgets/${budgetId}/categories/${id}` : `/categories/${id}`;
+    await api.delete(url);
+  },
 };
 
 export const accountService = {

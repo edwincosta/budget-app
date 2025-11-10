@@ -230,7 +230,9 @@ const Transactions = () => {
               <p className="text-sm text-blue-600">
                 Orçamento compartilhado por {activeBudget.budget?.owner?.name} •
                 Permissão:{" "}
-                {activeBudget.permission === "READ" ? "Visualização" : "Edição"}
+                {activeBudget.permission?.toUpperCase() === "READ"
+                  ? "Visualização"
+                  : "Edição"}
               </p>
             </div>
           </div>
@@ -241,7 +243,7 @@ const Transactions = () => {
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
           Transações
         </h1>
-        {(isOwner || activeBudget?.permission === "WRITE") && (
+        {(isOwner || activeBudget?.permission?.toUpperCase() === "WRITE") && (
           <button
             onClick={openCreateModal}
             className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors w-full sm:w-auto"
@@ -421,7 +423,8 @@ const Transactions = () => {
                       </div>
                     </div>
 
-                    {(isOwner || activeBudget?.permission === "WRITE") && (
+                    {(isOwner ||
+                      activeBudget?.permission?.toUpperCase() === "WRITE") && (
                       <div className="flex items-center space-x-1 flex-shrink-0">
                         <button
                           onClick={() => handleEdit(transaction)}
@@ -549,7 +552,8 @@ const Transactions = () => {
                       </div>
                     </div>
 
-                    {(isOwner || activeBudget?.permission === "WRITE") && (
+                    {(isOwner ||
+                      activeBudget?.permission?.toUpperCase() === "WRITE") && (
                       <div className="flex items-center space-x-1 md:space-x-2">
                         <button
                           onClick={() => handleEdit(transaction)}

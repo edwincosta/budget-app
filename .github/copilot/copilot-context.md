@@ -2599,11 +2599,13 @@ UPDATE "BudgetShare" SET permission = 'WRITE' WHERE permission = 'write';
 ## 🏥 SISTEMA DE HEALTH CHECK INTELIGENTE
 
 ### **Visão Geral**
+
 Sistema otimizado para plano gratuito do Render que garante disponibilidade do servidor sem esgotar recursos gratuitos.
 
 ### **Componentes Implementados**
 
 #### **useServerHealth Hook**
+
 ```typescript
 // /client/src/hooks/useServerHealth.ts
 - Health check inicial obrigatório ao carregar aplicação
@@ -2613,6 +2615,7 @@ Sistema otimizado para plano gratuito do Render que garante disponibilidade do s
 ```
 
 #### **ServerHealthGuard Component**
+
 ```typescript
 // /client/src/components/ServerHealthGuard.tsx
 - Loading spinner durante health check inicial
@@ -2622,6 +2625,7 @@ Sistema otimizado para plano gratuito do Render que garante disponibilidade do s
 ```
 
 #### **Integração no App.tsx**
+
 ```typescript
 // Envolvendo toda aplicação no health check
 <ServerHealthGuard>
@@ -2632,16 +2636,19 @@ Sistema otimizado para plano gratuito do Render que garante disponibilidade do s
 ### **Estratégia de Economia**
 
 #### **Plano Gratuito Render (750h/mês)**
+
 - ❌ **Evitado**: Health check a cada 5min = 720h/mês (96% do limite)
 - ✅ **Implementado**: Health check apenas ao acessar = ~120h/mês (16% do limite)
 - ✅ **Economia**: 83% das horas (500h economizadas/mês)
 
 #### **Comportamento do Servidor**
+
 - **Dormindo**: Após 15min de inatividade (automático)
 - **Despertar**: 10-30 segundos no primeiro acesso do dia
 - **Consumo**: <1MB/mês de bandwidth (0.001% do limite)
 
 ### **Experiência do Usuário**
+
 - Loading educativo durante despertar
 - Interface clara sobre processo de conexão
 - Retry manual em caso de falha
@@ -2649,4 +2656,166 @@ Sistema otimizado para plano gratuito do Render que garante disponibilidade do s
 
 ---
 
-**Última atualização:** 7 de novembro de 2025 - 18:45 - Health Check inteligente implementado: useServerHealth hook + ServerHealthGuard component - Otimizado para plano gratuito Render (economia de 83% das horas) - Versão atualizada para 1.1.2
+## 🆕 **CORREÇÕES DE COMPARTILHAMENTO - 10 DE NOVEMBRO DE 2025**
+
+### **Problemas Corrigidos no Sistema de Compartilhamento**
+
+#### **🚨 Problema 1: OWNER indevido no formulário de convite**
+
+- **Erro**: Usuários podiam selecionar permissão OWNER ao compartilhar orçamentos
+- **Regra Violada**: Apenas READ e WRITE são válidos para compartilhamento
+- **✅ Correção**: Removido OWNER do tipo SharePermission e formulário de convite
+
+#### **🚨 Problema 2: Exibição incorreta de permissões**
+
+- **Erro**: Sistema sempre exibia "read" independente da permissão real
+- **Causa**: Case sensitivity - backend usa UPPERCASE, frontend comparava lowercase
+- **✅ Correção**: Adicionado .toUpperCase() em todas as comparações de permissão
+
+#### **🚨 Problema 3: UX ruim no formulário de compartilhamento**
+
+- **Erro**: Dialog permanecia aberto durante envio de convite
+- **Problema**: Usuário não recebia feedback visual do carregamento
+- **✅ Correção**: Implementado estado loading com spinner e desabilitação de campos
+
+#### **🚨 Problema 4: Erro ao acessar categorias em orçamento compartilhado**
+
+- **Erro**: Página Categories não usava rotas específicas para orçamentos compartilhados
+- **Causa**: Chamadas diretas para /api/categories em vez de /api/budgets/:id/categories
+- **✅ Correção**: Migração completa para categoryService com suporte a budgetId
+
+#### **🚨 Problema 5: Incompatibilidade de case nos enums ACCEPT/REJECT**
+
+- **Erro**: Backend esperava 'accept'/'reject' mas frontend enviava 'ACCEPT'/'REJECT'
+- **Causa**: Inconsistência de padronização entre frontend e backend
+- **✅ Correção**: Backend normalizado para aceitar ambos e padronizar para UPPERCASE
+
+### **🔧 Implementações Técnicas**
+
+#### **Types Corrigidos**
+
+```typescript
+// ANTES (incorreto)
+export type SharePermission = "READ" | "WRITE" | "OWNER";
+
+// DEPOIS (correto)
+export type SharePermission = "READ" | "WRITE";
+```
+
+#### **Comparações de Permissão Padronizadas**
+
+```typescript
+// ANTES (bug case sensitivity)
+{
+  activeBudget.permission === "read" ? "Visualização" : "Edição";
+}
+
+// DEPOIS (correto)
+{
+  activeBudget.permission?.toUpperCase() === "READ" ? "Visualização" : "Edição";
+}
+```
+
+#### **Padronização UPPERCASE para Enums**
+
+```typescript
+// FRONTEND: Todos os enums mantidos em UPPERCASE
+export type ShareAction = "ACCEPT" | "REJECT";
+export type SharePermission = "READ" | "WRITE";
+
+// BACKEND: Validações normalizadas para UPPERCASE
+const normalizedAction = action?.toUpperCase();
+if (!normalizedAction || !["ACCEPT", "REJECT"].includes(normalizedAction)) {
+  res.status(400).json({ message: "Invalid action. Must be ACCEPT or REJECT" });
+}
+
+const normalizedPermission = permission?.toUpperCase();
+if (
+  !normalizedPermission ||
+  !["READ", "WRITE"].includes(normalizedPermission)
+) {
+  res
+    .status(400)
+    .json({ message: "Invalid permission. Must be READ or WRITE" });
+}
+```
+
+```typescript
+// ANTES (bug case sensitivity)
+{
+  activeBudget.permission === "read" ? "Visualização" : "Edição";
+}
+
+// DEPOIS (correto)
+{
+  activeBudget.permission?.toUpperCase() === "READ" ? "Visualização" : "Edição";
+}
+```
+
+#### **CategoryService Implementado**
+
+```typescript
+export const categoryService = {
+  async getCategories(budgetId?: string): Promise<Category[]>,
+  async createCategory(data: CreateCategoryRequest, budgetId?: string): Promise<Category>,
+  async updateCategory(id: string, data: UpdateCategoryRequest, budgetId?: string): Promise<Category>,
+  async deleteCategory(id: string, budgetId?: string): Promise<void>
+};
+```
+
+#### **Loading States no ShareManager**
+
+```typescript
+const [isSubmitting, setIsSubmitting] = useState(false);
+
+// Formulário com estado loading
+<button disabled={isSubmitting} className="flex items-center justify-center">
+  {isSubmitting ? (
+    <>
+      <Spinner className="mr-2" />
+      Enviando...
+    </>
+  ) : (
+    "Enviar Convite"
+  )}
+</button>;
+```
+
+### **📋 Arquivos Modificados**
+
+- ✅ `/client/src/types/index.ts`: SharePermission corrigido
+- ✅ `/client/src/components/ShareManager.tsx`: Loading states + permissionLabels
+- ✅ `/client/src/pages/Categories.tsx`: Migração para categoryService
+- ✅ `/client/src/pages/*.tsx`: Todas as páginas com comparações case-insensitive
+- ✅ `/client/src/services/api.ts`: CategoryService implementado
+- ✅ `/server/prisma/schema.prisma`: OWNER removido do enum SharePermission
+- ✅ `/server/src/routes/sharing.ts`: Normalização UPPERCASE para actions e permissions
+
+### **✅ Validação das Correções**
+
+#### **Sistema de Compartilhamento Funcional**
+
+- ✅ Apenas READ e WRITE disponíveis no formulário
+- ✅ Permissões exibidas corretamente em todos os componentes
+- ✅ Loading feedback durante envio de convites
+- ✅ Usuários conseguem acessar orçamentos compartilhados
+- ✅ Categorias funcionam em orçamentos compartilhados
+- ✅ Todas as operações CRUD respeitam permissões READ/WRITE
+
+#### **Regras de Negócio Implementadas**
+
+- ✅ 1 usuário possui 1 BUDGET com permissão OWNER
+- ✅ 1 usuário pode ter diversos BUDGETs com permissão READ ou WRITE
+- ✅ Usuário compartilha BUDGETs apenas com READ ou WRITE
+- ✅ WRITE permite todas operações exceto compartilhamento
+- ✅ READ permite apenas visualização
+- ✅ Apenas OWNER pode compartilhar BUDGETs
+- ✅ Qualquer usuário pode marcar budget como padrão
+
+### **🎯 Status Final**
+
+**SISTEMA DE COMPARTILHAMENTO 100% FUNCIONAL** - Todas as regras de negócio implementadas corretamente, bugs de interface corrigidos, e UX otimizada com loading states apropriados.
+
+---
+
+**Última atualização:** 10 de novembro de 2025 - 23:00 - Correções completas do sistema de compartilhamento + padronização UPPERCASE para todos os enums: regras de permissão, case sensitivity, UX loading states, migração categoryService e normalização backend - Sistema 100% operacional

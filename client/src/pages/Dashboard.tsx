@@ -1,8 +1,14 @@
-import { useState, useEffect } from 'react'
-import { DollarSign, TrendingUp, TrendingDown, CreditCard, Users } from 'lucide-react'
-import { dashboardService } from '@/services/api'
-import { useSearchParams } from 'react-router-dom'
-import { useBudget } from '@/contexts/BudgetContext'
+import { useState, useEffect } from "react";
+import {
+  DollarSign,
+  TrendingUp,
+  TrendingDown,
+  CreditCard,
+  Users,
+} from "lucide-react";
+import { dashboardService } from "@/services/api";
+import { useSearchParams } from "react-router-dom";
+import { useBudget } from "@/contexts/BudgetContext";
 
 interface DashboardStats {
   totalBalance: number;
@@ -14,14 +20,14 @@ interface DashboardStats {
 
 export default function Dashboard() {
   const [searchParams] = useSearchParams();
-  const sharedUserId = searchParams.get('sharedUser');
+  const sharedUserId = searchParams.get("sharedUser");
   const { activeBudget } = useBudget();
   const [stats, setStats] = useState<DashboardStats>({
     totalBalance: 0,
     monthlyIncome: 0,
     monthlyExpenses: 0,
     accountsCount: 0,
-    recentTransactions: []
+    recentTransactions: [],
   });
   const [loading, setLoading] = useState(true);
 
@@ -35,16 +41,16 @@ export default function Dashboard() {
       const data = await dashboardService.getStats(budgetId);
       setStats(data);
     } catch (error) {
-      console.error('Error loading dashboard stats:', error);
+      console.error("Error loading dashboard stats:", error);
     } finally {
       setLoading(false);
     }
   };
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
     }).format(value);
   };
 
@@ -54,11 +60,11 @@ export default function Dashboard() {
     const diffTime = Math.abs(now.getTime() - transactionDate.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    if (diffDays === 1) return 'Hoje';
-    if (diffDays === 2) return 'Ontem';
+    if (diffDays === 1) return "Hoje";
+    if (diffDays === 2) return "Ontem";
     if (diffDays <= 7) return `${diffDays - 1} dias atrás`;
-    
-    return transactionDate.toLocaleDateString('pt-BR');
+
+    return transactionDate.toLocaleDateString("pt-BR");
   };
 
   if (loading) {
@@ -80,26 +86,32 @@ export default function Dashboard() {
             <Users className="h-5 w-5 text-blue-600 mr-3" />
             <div>
               <h3 className="text-sm font-medium text-blue-800">
-                {activeBudget 
+                {activeBudget
                   ? `Visualizando: ${activeBudget.budget?.name}`
-                  : 'Visualizando dados compartilhados'
-                }
+                  : "Visualizando dados compartilhados"}
               </h3>
               <p className="text-sm text-blue-600">
-                {activeBudget 
-                  ? `Orçamento compartilhado por ${activeBudget.budget?.owner?.name} • Permissão: ${activeBudget.permission === 'READ' ? 'Visualização' : 'Edição'}`
-                  : 'Você está visualizando os dados financeiros de outro usuário'
-                }
+                {activeBudget
+                  ? `Orçamento compartilhado por ${
+                      activeBudget.budget?.owner?.name
+                    } • Permissão: ${
+                      activeBudget.permission?.toUpperCase() === "READ"
+                        ? "Visualização"
+                        : "Edição"
+                    }`
+                  : "Você está visualizando os dados financeiros de outro usuário"}
               </p>
             </div>
           </div>
         </div>
       )}
-      
+
       <div>
         <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
         <p className="text-gray-600">
-          {activeBudget ? 'Dados do orçamento compartilhado' : 'Visão geral das suas finanças'}
+          {activeBudget
+            ? "Dados do orçamento compartilhado"
+            : "Visão geral das suas finanças"}
         </p>
       </div>
 
@@ -200,7 +212,8 @@ export default function Dashboard() {
             <div className="flow-root">
               {stats.recentTransactions.length === 0 ? (
                 <p className="text-center text-gray-500 py-8">
-                  Nenhuma transação encontrada. Comece criando algumas transações!
+                  Nenhuma transação encontrada. Comece criando algumas
+                  transações!
                 </p>
               ) : (
                 <ul className="-my-2 divide-y divide-gray-200">
@@ -209,8 +222,14 @@ export default function Dashboard() {
                       <div className="flex items-center justify-between space-x-4">
                         <div className="flex items-center space-x-4 min-w-0 flex-1">
                           <div className="flex-shrink-0">
-                            <div className={`h-8 w-8 ${transaction.category.type === 'INCOME' ? 'bg-green-100' : 'bg-red-100'} rounded-full flex items-center justify-center`}>
-                              {transaction.category.type === 'INCOME' ? (
+                            <div
+                              className={`h-8 w-8 ${
+                                transaction.category.type === "INCOME"
+                                  ? "bg-green-100"
+                                  : "bg-red-100"
+                              } rounded-full flex items-center justify-center`}
+                            >
+                              {transaction.category.type === "INCOME" ? (
                                 <TrendingUp className="h-4 w-4 text-green-600" />
                               ) : (
                                 <TrendingDown className="h-4 w-4 text-red-600" />
@@ -222,14 +241,25 @@ export default function Dashboard() {
                               {transaction.category.name}
                             </p>
                             <p className="text-sm text-gray-500 truncate">
-                              <span className="hidden sm:inline">{transaction.account.name} • </span>
+                              <span className="hidden sm:inline">
+                                {transaction.account.name} •{" "}
+                              </span>
                               {formatDate(transaction.date)}
                             </p>
                           </div>
                         </div>
                         <div className="flex-shrink-0">
-                          <span className={`text-sm font-medium ${transaction.category.type === 'INCOME' ? 'text-green-600' : 'text-red-600'}`}>
-                            {transaction.category.type === 'INCOME' ? '+' : '-'}{formatCurrency(Math.abs(Number(transaction.amount)))}
+                          <span
+                            className={`text-sm font-medium ${
+                              transaction.category.type === "INCOME"
+                                ? "text-green-600"
+                                : "text-red-600"
+                            }`}
+                          >
+                            {transaction.category.type === "INCOME" ? "+" : "-"}
+                            {formatCurrency(
+                              Math.abs(Number(transaction.amount))
+                            )}
                           </span>
                         </div>
                       </div>
@@ -242,5 +272,5 @@ export default function Dashboard() {
         </div>
       </div>
     </div>
-  )
+  );
 }
