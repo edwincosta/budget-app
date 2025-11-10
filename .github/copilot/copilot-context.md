@@ -779,6 +779,9 @@ Todas as páginas foram atualizadas para usar o contexto de orçamento ativo:
 - **Seleção de Conta**: Dropdown com contas do orçamento ativo
 - **Preview de Transações**: Lista todas as transações detectadas
 - **Classificação Manual**: Interface para categorizar cada transação
+  - **🆕 EDIÇÃO MÚLTIPLA**: Transações podem ser reclassificadas quantas vezes necessário
+  - **🆕 LOADING POR LINHA**: Componente Loading específico para cada transação em processo
+  - **🆕 UX OTIMIZADA**: Botão de editar categoria + feedback visual individual
 - **Detecção de Duplicatas**: Marca possíveis duplicatas com explicação
 - **Confirmação**: Botão para finalizar importação (com/sem duplicatas)
 - **Histórico**: Lista sessões de importação anteriores
@@ -2818,4 +2821,4 @@ const [isSubmitting, setIsSubmitting] = useState(false);
 
 ---
 
-**Última atualização:** 10 de novembro de 2025 - 23:00 - Correções completas do sistema de compartilhamento + padronização UPPERCASE para todos os enums: regras de permissão, case sensitivity, UX loading states, migração categoryService e normalização backend - Sistema 100% operacional
+**Última atualização:** 10 de novembro de 2025 - 23:30 - **🆕 MELHORIA IMPORTAÇÃO**: Implementada funcionalidade de edição múltipla de categorias na tela de Importar Transações. Agora permite reclassificar transações quantas vezes necessário com loading individual por linha e UX otimizada (v1.3.0)
