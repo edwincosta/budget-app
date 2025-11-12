@@ -382,6 +382,7 @@ POST   /budgets/:budgetId/import/upload              # Upload para orçamento es
 GET    /budgets/:budgetId/import/sessions            # Sessões de orçamento específico
 GET    /budgets/:budgetId/import/sessions/:sessionId # Transações de sessão específica
 PUT    /budgets/:budgetId/import/transactions/:transactionId/classify  # Classificar em orçamento específico
+DELETE /budgets/:budgetId/import/transactions/:transactionId          # Remover transação temporária
 POST   /budgets/:budgetId/import/sessions/:sessionId/confirm           # Confirmar em orçamento específico
 DELETE /budgets/:budgetId/import/sessions/:sessionId                   # Cancelar em orçamento específico
 ```
@@ -657,6 +658,7 @@ Usuário:
 3. Sistema processa e retorna sessionId + duplicatas detectadas
 4. GET /api/import/sessions/:sessionId → Visualiza transações para classificação
 5. PUT /api/import/transactions/:id/classify → Classifica cada transação (categoryId)
+5.1 DELETE /api/import/transactions/:id → Remove transação temporária indesejada
 6. POST /api/import/sessions/:sessionId/confirm → Confirma importação
 7. Transações são salvas como definitivas no sistema
 
@@ -1587,6 +1589,7 @@ export const importService = {
   async getSessions(budgetId?: string): Promise<ImportSession[]>,
   async getSessionDetails(sessionId: string, budgetId?: string): Promise<ImportSessionDetails>,
   async classifyTransaction(transactionId: string, categoryId: string, budgetId?: string): Promise<TempTransaction>,
+  async deleteTempTransaction(transactionId: string, budgetId?: string): Promise<void>,
   async confirmImport(sessionId: string, importDuplicates: boolean, budgetId?: string): Promise<ConfirmImportResponse>,
   async cancelSession(sessionId: string, budgetId?: string): Promise<void>
 };
@@ -2935,4 +2938,8 @@ const [isSubmitting, setIsSubmitting] = useState(false);
 
 ---
 
-**Última atualização:** 10 de novembro de 2025 - 23:30 - **🆕 MELHORIA IMPORTAÇÃO**: Implementada funcionalidade de edição múltipla de categorias na tela de Importar Transações. Agora permite reclassificar transações quantas vezes necessário com loading individual por linha e UX otimizada (v1.3.0)
+**Última atualização:** 12 de novembro de 2025 - 12:15 - **🆕 MELHORIA IMPORTAÇÃO v2**: 
+1. Loading states completos em todas as chamadas de API da importação
+2. Funcionalidade de remover transações individuais antes da confirmação 
+3. UX otimizada com feedback visual em operações (loading individual + global)
+4. Nova API DELETE /import/transactions/:id para remoção granular (v1.3.1)

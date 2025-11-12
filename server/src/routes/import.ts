@@ -66,6 +66,12 @@ router.get('/sessions/:sessionId', ImportController.getSessionTransactions);
 router.put('/transactions/:transactionId/classify', ImportController.classifyTransaction);
 
 /**
+ * DELETE /api/import/transactions/:transactionId
+ * Remove uma transação temporária individual
+ */
+router.delete('/transactions/:transactionId', ImportController.deleteTempTransaction);
+
+/**
  * POST /api/import/sessions/:sessionId/confirm
  * Confirma importação das transações classificadas
  * Body: { importDuplicates?: boolean }

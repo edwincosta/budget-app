@@ -1615,6 +1615,12 @@ router.get('/:budgetId/import/sessions/:sessionId', auth, budgetAuth, ImportCont
 router.put('/:budgetId/import/transactions/:transactionId/classify', auth, budgetAuth, requireWritePermission, ImportController.classifyTransaction);
 
 /**
+ * DELETE /api/budgets/:budgetId/import/transactions/:transactionId
+ * Remove uma transação temporária individual
+ */
+router.delete('/:budgetId/import/transactions/:transactionId', auth, budgetAuth, requireWritePermission, ImportController.deleteTempTransaction);
+
+/**
  * POST /api/budgets/:budgetId/import/sessions/:sessionId/confirm
  * Confirma importação das transações classificadas
  */

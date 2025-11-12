@@ -466,6 +466,17 @@ export const importService = {
   },
 
   /**
+   * Remove uma transação temporária individual
+   */
+  async deleteTempTransaction(transactionId: string, budgetId?: string): Promise<void> {
+    const url = budgetId
+      ? `/budgets/${budgetId}/import/transactions/${transactionId}`
+      : `/import/transactions/${transactionId}`;
+
+    await api.delete(url);
+  },
+
+  /**
    * Confirma importação das transações classificadas
    */
   async confirmImport(sessionId: string, importDuplicates = false, budgetId?: string): Promise<import('@/types').ConfirmImportResponse> {

@@ -51,6 +51,7 @@ export const ImportPage: React.FC<ImportPageProps> = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<string>("");
   const [currentSessionId, setCurrentSessionId] = useState<string>("");
+  const [isMainPageLoading, setIsMainPageLoading] = useState(false);
   const [dateRange, setDateRange] = useState<{
     startDate: string;
     endDate: string;
@@ -98,6 +99,7 @@ export const ImportPage: React.FC<ImportPageProps> = () => {
   // Buscar sessões de importação - PADRÃO COPILOT-CONTEXT.MD
   const {
     data: sessions,
+    isLoading: loadingSessions,
     refetch: refetchSessions,
     error: sessionsError,
   } = useQuery({
@@ -171,7 +173,7 @@ export const ImportPage: React.FC<ImportPageProps> = () => {
             }
           : undefined
       ),
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       toast.success(
         `Arquivo processado: ${data.totalTransactions} transações encontradas`
       );
@@ -180,7 +182,12 @@ export const ImportPage: React.FC<ImportPageProps> = () => {
       }
       setCurrentSessionId(data.sessionId);
       setCurrentStep("classify");
-      refetchSessions();
+      setIsMainPageLoading(true);
+      try {
+        await refetchSessions();
+      } finally {
+        setIsMainPageLoading(false);
+      }
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || "Erro ao processar arquivo");
@@ -191,12 +198,20 @@ export const ImportPage: React.FC<ImportPageProps> = () => {
   const cancelSessionMutation = useMutation({
     mutationFn: (sessionId: string) =>
       importService.cancelSession(sessionId, budgetId),
-    onSuccess: () => {
+    onMutate: () => {
+      setIsMainPageLoading(true);
+    },
+    onSuccess: async () => {
       toast.success("Sessão de importação cancelada com sucesso");
-      refetchSessions();
+      try {
+        await refetchSessions();
+      } finally {
+        setIsMainPageLoading(false);
+      }
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || "Erro ao cancelar sessão");
+      setIsMainPageLoading(false);
     },
   });
 
@@ -288,8 +303,24 @@ export const ImportPage: React.FC<ImportPageProps> = () => {
     );
   }
 
+  // Show loading component while initial data is being fetched
+  if (loadingAccounts || loadingSessions) {
+    return (
+      <Loading
+        message="Carregando dados de importação..."
+        size="lg"
+        overlay={false}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Loading overlay para operações da página principal */}
+      {isMainPageLoading && (
+        <Loading message="Processando..." size="lg" overlay={true} />
+      )}
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8">
         {/* Banner de orçamento compartilhado */}
         {activeBudget && (
@@ -676,6 +707,7 @@ const ClassificationStep: React.FC<ClassificationStepProps> = ({
   onBack,
 }) => {
   const { activeBudget, isOwner } = useBudget();
+  const { confirmDelete } = useUXComponents();
 
   // Verificar permissões - pode escrever se é o owner ou se tem permissão WRITE
   const canWrite =
@@ -700,6 +732,8 @@ const ClassificationStep: React.FC<ClassificationStepProps> = ({
   const [editingTransactions, setEditingTransactions] = useState<Set<string>>(
     new Set()
   );
+  // Estado para controlar loading global (refetch, etc.)
+  const [isGlobalLoading, setIsGlobalLoading] = useState(false);
 
   // Mutation para classificar transação
   const classifyMutation = useMutation({
@@ -715,8 +749,13 @@ const ClassificationStep: React.FC<ClassificationStepProps> = ({
       // Adicionar transação ao estado de loading
       setLoadingTransactions((prev) => new Set(prev).add(transactionId));
     },
-    onSuccess: () => {
-      refetch();
+    onSuccess: async () => {
+      setIsGlobalLoading(true);
+      try {
+        await refetch();
+      } finally {
+        setIsGlobalLoading(false);
+      }
     },
     onError: (error: any) => {
       toast.error(
@@ -743,6 +782,9 @@ const ClassificationStep: React.FC<ClassificationStepProps> = ({
   const confirmMutation = useMutation({
     mutationFn: ({ importDuplicates }: { importDuplicates: boolean }) =>
       importService.confirmImport(sessionId, importDuplicates, budgetId),
+    onMutate: () => {
+      setIsGlobalLoading(true);
+    },
     onSuccess: (data) => {
       toast.success(
         `Importação concluída: ${data.importedCount} transações importadas`
@@ -754,16 +796,46 @@ const ClassificationStep: React.FC<ClassificationStepProps> = ({
         error.response?.data?.message || "Erro ao confirmar importação"
       );
     },
+    onSettled: () => {
+      setIsGlobalLoading(false);
+    },
+  });
+
+  // Mutation para deletar transação temporária
+  const deleteTempTransactionMutation = useMutation({
+    mutationFn: (transactionId: string) =>
+      importService.deleteTempTransaction(transactionId, budgetId),
+    onMutate: (transactionId) => {
+      // Adicionar transação ao estado de loading
+      setLoadingTransactions((prev) => new Set(prev).add(transactionId));
+    },
+    onSuccess: async () => {
+      toast.success("Transação removida com sucesso");
+      setIsGlobalLoading(true);
+      try {
+        await refetch();
+      } finally {
+        setIsGlobalLoading(false);
+      }
+    },
+    onError: (error: any) => {
+      toast.error(
+        error.response?.data?.message || "Erro ao remover transação"
+      );
+    },
+    onSettled: (_, __, transactionId) => {
+      // Remover transação do estado de loading quando terminar (sucesso ou erro)
+      setLoadingTransactions((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(transactionId);
+        return newSet;
+      });
+    },
   });
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando transações...</p>
-        </div>
-      </div>
+      <Loading message="Carregando transações..." size="lg" overlay={false} />
     );
   }
 
@@ -775,6 +847,12 @@ const ClassificationStep: React.FC<ClassificationStepProps> = ({
     setEditingTransactions((prev) => new Set(prev).add(transactionId));
   };
 
+  const handleDeleteTransaction = (transactionId: string, description: string) => {
+    confirmDelete(`a transação "${description}"`, () => {
+      deleteTempTransactionMutation.mutate(transactionId);
+    });
+  };
+
   const handleConfirmImport = (importDuplicates = false) => {
     confirmMutation.mutate({ importDuplicates });
   };
@@ -784,6 +862,11 @@ const ClassificationStep: React.FC<ClassificationStepProps> = ({
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Loading overlay global para operações de API */}
+      {isGlobalLoading && (
+        <Loading message="Processando..." size="lg" overlay={true} />
+      )}
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8">
         {/* Header */}
         <div className="bg-white rounded-lg shadow-sm p-4 md:p-6 mb-6">
@@ -895,7 +978,7 @@ const ClassificationStep: React.FC<ClassificationStepProps> = ({
                     )}
                   </div>
 
-                  {/* Classificação */}
+                  {/* Classificação e Ações */}
                   <div className="flex items-center space-x-3">
                     {loadingTransactions.has(transaction.id) ? (
                       // Mostrar loading específico para esta transação
@@ -971,6 +1054,22 @@ const ClassificationStep: React.FC<ClassificationStepProps> = ({
                           </button>
                         )}
                       </div>
+                    )}
+
+                    {/* Botão de remover transação - sempre visível quando permitido */}
+                    {canWrite && !loadingTransactions.has(transaction.id) && (
+                      <button
+                        onClick={() =>
+                          handleDeleteTransaction(
+                            transaction.id,
+                            transaction.description
+                          )
+                        }
+                        className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                        title="Remover transação"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     )}
                   </div>
                 </div>
