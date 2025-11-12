@@ -687,4 +687,78 @@ export class ImportController {
             res.status(500).json({ message: 'Erro interno do servidor' });
         }
     }
+
+    /**
+     * Remove uma transação temporária individual
+     */
+    static async deleteTempTransaction(req: AuthRequest, res: Response): Promise<void> {
+        try {
+            const { transactionId } = req.params;
+
+            // Busca a transação temporária e valida permissão
+            const tempTransaction = await prisma.tempTransaction.findFirst({
+                where: {
+                    id: transactionId
+                },
+                include: {
+                    session: {
+                        include: {
+                            budget: {
+                                include: {
+                                    shares: {
+                                        where: {
+                                            sharedWithId: req.user!.id,
+                                            status: 'ACCEPTED'
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            if (!tempTransaction) {
+                res.status(404).json({ message: 'Transação temporária não encontrada' });
+                return;
+            }
+
+            // Verificar permissões - usuário deve ser owner do budget ou ter permissão WRITE
+            const budget = tempTransaction.session.budget;
+            const hasPermission = budget.ownerId === req.user!.id || 
+                                budget.shares.some(share => share.permission === 'WRITE');
+
+            if (!hasPermission) {
+                res.status(403).json({ message: 'Sem permissão para deletar transações neste orçamento' });
+                return;
+            }
+
+            // Verificar se a sessão não está completa
+            if (tempTransaction.session.status === 'COMPLETED') {
+                res.status(400).json({ message: 'Não é possível deletar transações de uma sessão já confirmada' });
+                return;
+            }
+
+            // Deletar a transação temporária
+            await prisma.tempTransaction.delete({
+                where: { id: transactionId }
+            });
+
+            // Atualizar o contador de transações na sessão
+            await prisma.importSession.update({
+                where: { id: tempTransaction.sessionId },
+                data: {
+                    totalTransactions: {
+                        decrement: 1
+                    }
+                }
+            });
+
+            res.json({ message: 'Transação removida com sucesso' });
+
+        } catch (error) {
+            console.error('Error in deleteTempTransaction:', error);
+            res.status(500).json({ message: 'Erro interno do servidor' });
+        }
+    }
 }
