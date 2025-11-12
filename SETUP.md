@@ -258,6 +258,26 @@ Se necessário, force um redeploy:
 - **Render Docs**: https://render.com/docs
 - **Prisma Docs**: https://www.prisma.io/docs
 
+## 🌐 URLs de Produção
+
+Após o deploy completo, suas URLs serão:
+
+- **Frontend**: https://budget-app-docker-client.onrender.com (ou sua URL específica)
+- **Backend API**: https://budget-app-docker-server.onrender.com (ou sua URL específica)
+- **Health Check**: https://seu-backend.onrender.com/health
+- **API Test**: https://seu-backend.onrender.com/api/test
+
+## 💰 Resumo de Custos
+
+| Serviço               | Plan                 | Custo      |
+| --------------------- | -------------------- | ---------- |
+| **Render Backend**    | Free (Docker)        | $0/mês     |
+| **Render Frontend**   | Free (Static)        | $0/mês     |
+| **Supabase Database** | Free                 | $0/mês     |
+| **Domain**            | Render subdomain     | $0/mês     |
+| **SSL**               | Auto (Let's Encrypt) | $0/mês     |
+| **Total**             |                      | **$0/mês** |
+
 ---
 
 **🎉 Parabéns!** Seu Budget App está rodando em produção com $0/mês de custo!
